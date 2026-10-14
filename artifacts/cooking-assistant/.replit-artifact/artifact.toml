@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "International Cooking Assistant"
+description = "A mobile-friendly course prototype that helps young adults plan ingredients, substitutions, and specialty-grocery shopping for three international dishes using prepared recommendations."
+version = "1.0.0"
+id = "artifacts/cooking-assistant"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19491
+
+[services.development]
+run = "pnpm --filter @workspace/cooking-assistant run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/cooking-assistant", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/cooking-assistant/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19491"
+BASE_PATH = "/"

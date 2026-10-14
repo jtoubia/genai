@@ -1,0 +1,86 @@
+Build a small working web prototype for an international cooking assistant.
+
+PRODUCT PURPOSE
+Help a young adult who wants to cook an unfamiliar international dish understand what ingredients they need and where to look for specialty items.
+
+Build one complete flow:
+Choose a dish and basic preferences → click “Create my shopping plan” → receive an understandable ingredient and sourcing plan.
+
+This is a course prototype. Use prepared responses and sample data to simulate future AI behavior. No live AI integration, API keys, database, or backend is required.
+
+STARTING SCREEN
+Show the heading “From dish idea to shopping plan.”
+Add a short explanation: “Choose a dish to discover what you need, understand unfamiliar ingredients, and find places to look for them.”
+
+Provide:
+1. A required dish dropdown with three supported examples:
+   - Thai green curry
+   - Chicken biryani
+   - Pad kra pao
+2. A servings selector: 2 or 4.
+3. A dietary preference selector: No restriction or Dairy-free.
+4. A button labeled “Create my shopping plan.”
+
+Show the location as “South Bend, Indiana — demo location.” Do not provide a location input that the prototype cannot actually use.
+
+Include a clearly visible note: “Prototype: prepared recommendations and illustrative store options; no live AI or inventory checks.”
+
+RESULT
+After submission, display a shopping plan matching the selected dish, servings, and dietary preference. Include:
+
+1. Ingredients to buy
+- Separate common supermarket ingredients from specialty ingredients.
+- Include quantities for the selected servings.
+- Use a consistent prepared recipe for each dish; double quantities when servings change from 2 to 4.
+
+2. Understand the specialty ingredients
+- Briefly explain each unfamiliar ingredient and its role in the dish.
+- Provide substitution guidance for selected specialty ingredients.
+- Explain how each substitute changes the flavor or character of the dish.
+- Clearly distinguish the traditional ingredient from an approximation.
+- If there is no close substitute, say so.
+
+3. Where to look
+- Group ingredients into a practical shopping plan: common items at a regular supermarket and specialty items at an appropriate international grocery.
+- Use clearly labeled fictional sample stores, such as “Demo Asian Grocery” and “Demo Neighborhood Supermarket.”
+- Match store suggestions to the relevant ingredients.
+- Do not invent real addresses, distances, hours, or confirmed stock.
+- Label these options “Illustrative store option — check availability before visiting.”
+
+DIETARY BEHAVIOR
+Make the dietary preference affect the plan where relevant:
+- For dairy-free chicken biryani, replace dairy yogurt and ghee with a prepared alternative and explain the expected difference.
+- For dishes whose prepared recipes already contain no dairy, explicitly state that no dairy substitution is needed.
+- Remind users to check packaged ingredient labels; do not claim allergy safety.
+
+END-TO-END BEHAVIOR
+- Keep the submitted selections visible with the result.
+- Include an “Edit my choices” button so users can change inputs and generate another plan.
+- Validate the required dish selection with a clear message.
+- Ensure every button and selector works.
+- Do not display unrelated results or pretend to support dishes beyond the three examples.
+- The main flow must work from beginning to end without dead ends.
+
+DESIGN
+Use a simple, readable, mobile-friendly layout with clear labels and short sections. Focus on usability. No elaborate landing page, generated images, or animations are necessary.
+
+SCOPE
+Do not add accounts, payments, restaurant discovery, delivery, maps, live inventory, saved plans, dashboards, chat, or unsupported dietary options.
+
+IMPLEMENTATION AND DOCUMENTATION
+Use a lightweight frontend and keep the prepared dish data easy to edit.
+
+Create a README explaining:
+- The product’s purpose and intended user.
+- How to run and use the prototype.
+- What works: choosing supported dishes, changing servings and dietary preferences, viewing a matching plan, and editing choices.
+- What is simulated: AI interpretation, ingredient recommendations, substitutions, and local store matching.
+- What future AI would do: interpret open-ended cooking requests and produce contextual ingredient explanations and substitution guidance.
+- Current limitations: three prepared dishes, two serving sizes, one dietary restriction, a fixed demo location, and fictional store options.
+
+Verify these three flows before finishing:
+1. Thai green curry for 2 with no restriction displays common and specialty ingredients and sourcing guidance.
+2. Chicken biryani for 4 with Dairy-free selected displays scaled quantities and dairy substitutions.
+3. Pad kra pao explains Thai holy basil, the tradeoff of substituting Thai sweet basil, and uncertain store availability.
+
+Report any remaining issues honestly. Do not claim that these checks constitute real user testing.
