@@ -14,6 +14,7 @@ A future AI system would interpret open-ended cooking requests and write context
 
 ## Test results
 | Test | Input or action | What happened | Result |
+|---|---|---|---|
 | Typical case | Thai green curry, 2 servings, No restriction | Plan showed common and specialty ingredients, sourcing, and disclaimers | Pass |
 | Challenge case | Chicken biryani, 4 servings, Dairy-free | Quantities doubled, yogurt and ghee replaced, differences explained, label reminder shown | Pass |
 | Invalid or empty case | No dish chosen, submit | Message "Choose a dish to create your shopping plan." and no plan | Pass |
