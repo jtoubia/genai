@@ -10,8 +10,11 @@ import {
   type DishId,
   type Ingredient,
 } from './prepared-plans';
+import { buildShoppingPlan, interpretRequest, recommendedChoices, type SwapChoice } from './chef-request';
 
-type Choices = { dish: DishId | ''; servings: 2 | 4; diet: Diet };
+type Choices = { dish: DishId | ''; servings: 2 | 4; diet: Diet; request: string };
+
+const unrecognizedMessage = "We couldn't confidently apply that request yet. Your standard shopping plan is shown below, and your request has not been applied.";
 
 function IngredientList({ items, servings, group }: { items: Ingredient[]; servings: 2 | 4; group: string }) {
   return (
@@ -33,11 +36,15 @@ function IngredientList({ items, servings, group }: { items: Ingredient[]; servi
 }
 
 function Home() {
-  const [choices, setChoices] = useState<Choices>({ dish: '', servings: 2, diet: 'No restriction' });
+  const [choices, setChoices] = useState<Choices>({ dish: '', servings: 2, diet: 'No restriction', request: '' });
+  const [swaps, setSwaps] = useState<Record<string, SwapChoice>>({});
   const [submitted, setSubmitted] = useState<Choices | null>(null);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(true);
   const plan = submitted?.dish ? planFor(submitted.dish, submitted.diet) : null;
+  const interp = plan && submitted ? interpretRequest(submitted.request, plan, submitted.diet) : null;
+  const recommended = plan && interp ? recommendedChoices(plan, interp) : {};
+  const shopping = plan && interp ? buildShoppingPlan(plan, interp, swaps) : null;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,6 +55,10 @@ function Home() {
     }
     setError('');
     setSubmitted({ ...choices });
+    if (choices.dish) {
+      const nextPlan = planFor(choices.dish, choices.diet);
+      setSwaps(recommendedChoices(nextPlan, interpretRequest(choices.request, nextPlan, choices.diet)));
+    }
     setEditing(false);
     window.setTimeout(() => document.getElementById('plan-heading')?.scrollIntoView({ block: 'start' }), 0);
   }
@@ -63,8 +74,8 @@ function Home() {
     <div className="app-shell">
       <header className="topbar" data-testid="header-app">
         <div className="brand" data-testid="text-brand">
-          <span className="brand-mark" aria-hidden="true">k</span>
-          <span>Kitchen Fieldnotes</span>
+          <span className="brand-mark" aria-hidden="true">c</span>
+          <span>CuisineIQ</span>
         </div>
         <div className="topbar-note" data-testid="text-prototype-status">A little help, before the first chop</div>
       </header>
@@ -130,6 +141,19 @@ function Home() {
                 </div>
                 <p className="field-hint">Packaged ingredients vary. Always check labels for your needs.</p>
               </div>
+              <div className="field">
+                <label className="field-label" htmlFor="chef-request">Tell the chef what you need <span className="optional">Optional</span></label>
+                <textarea
+                  id="chef-request"
+                  className="chef-textarea"
+                  rows={4}
+                  value={choices.request}
+                  placeholder="I already have chicken and rice. Make it mild and help me buy everything else at one store."
+                  onChange={(event) => setChoices({ ...choices, request: event.target.value })}
+                  data-testid="input-chef-request"
+                />
+                <p className="field-hint">Optional — tell us what you already have, ingredients you cannot find, how you want the dish to taste, or how you want to shop.</p>
+              </div>
               <button className="submit-button" type="submit" data-testid="button-submit-plan">
                 Create my shopping plan.
                 <ArrowRight size={16} aria-hidden="true" />
@@ -161,7 +185,42 @@ function Home() {
                   </div>
                   <p className="plan-intro" style={{ marginTop: 12 }} data-testid="text-plan-summary">{plan.summary}</p>
                 </div>
+                {interp?.hasRequest && (
+                  interp.understood ? (
+                    <section className="adapted-card" aria-labelledby="adapted-heading" data-testid="section-adapted-plan">
+                      <div className="adapted-head">
+                        <h3 id="adapted-heading">Your Adapted Plan</h3>
+                        <span className="sim-badge">Prototype AI Simulation</span>
+                      </div>
+                      <p className="adapted-quote" data-testid="text-chef-request">“{submitted!.request.trim()}”</p>
+                      <ul className="adapt-list">
+                        {interp.cards.map((card, i) => (
+                          <li key={i} className="adapt-item" data-testid={`card-adaptation-${i}`}>
+                            <span className="adapt-kind">{card.kind}</span>
+                            <span>{card.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : (
+                    <p className="notice notice-muted" role="status" data-testid="notice-request-unrecognized">{unrecognizedMessage}</p>
+                  )
+                )}
                 <p className="notice" data-testid="notice-dietary"><strong>Dietary note:</strong> {plan.dietaryNote}</p>
+
+                {shopping && shopping.atHome.length > 0 && (
+                  <section className="section-card" aria-labelledby="home-heading" data-testid="section-at-home">
+                    <div className="section-title">
+                      <h3 id="home-heading">Already at home</h3>
+                      <span className="store-name home-pill">Not on your list</span>
+                    </div>
+                    <ul className="home-list">
+                      {shopping.atHome.map((item) => (
+                        <li key={item.id} data-testid={`text-at-home-${item.id}`}><span>{item.name}</span><span className="ingredient-qty">{item.quantity[submitted!.servings]}</span></li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
 
                 <section className="section-card" aria-labelledby="common-heading" data-testid="section-common-ingredients">
                   <div className="section-title">
@@ -169,7 +228,7 @@ function Home() {
                     <span className="store-name" data-testid="text-common-store">Demo Neighborhood Supermarket</span>
                   </div>
                   <p className="store-disclaimer" data-testid="text-common-store-disclaimer">{storeOptionDisclosure}</p>
-                  <IngredientList items={plan.common} servings={submitted!.servings} group="common" />
+                  <IngredientList items={shopping!.common} servings={submitted!.servings} group="common" />
                 </section>
                 <section className="section-card" aria-labelledby="specialty-heading" data-testid="section-specialty-ingredients">
                   <div className="section-title">
@@ -177,13 +236,63 @@ function Home() {
                     <span className="store-name" data-testid="text-specialty-store">Demo Asian Grocery</span>
                   </div>
                   <p className="store-disclaimer" data-testid="text-specialty-store-disclaimer">{storeOptionDisclosure}</p>
-                  <IngredientList items={plan.specialty} servings={submitted!.servings} group="specialty" />
+                  {shopping!.specialty.length > 0 ? (
+                    <IngredientList items={shopping!.specialty} servings={submitted!.servings} group="specialty" />
+                  ) : (
+                    <p className="empty-specialty" data-testid="text-specialty-empty">Nothing needed from the specialty grocer with your current choices. One supermarket trip covers the list.</p>
+                  )}
+                </section>
+
+                <section className="section-card" aria-labelledby="swap-heading" data-testid="section-substitution-review">
+                  <div className="section-title">
+                    <h3 id="swap-heading">Fallbacks and substitution review</h3>
+                    <span className="store-name">{shopping!.fallbacks.filter((f) => swaps[f.id] === 'substitute').length} of {shopping!.fallbacks.length} swapped</span>
+                  </div>
+                  <p className="control-note" data-testid="text-control-note">You stay in control — review suggested swaps before using your final shopping list.</p>
+                  <div className="swap-list">
+                    {shopping!.fallbacks.map((f) => {
+                      const current = swaps[f.id] ?? 'original';
+                      const rec = recommended[f.id] ?? 'original';
+                      return (
+                        <details className="swap" key={f.id} open={rec === 'substitute'} data-testid={`card-fallback-${f.id}`}>
+                          <summary>
+                            <span className="swap-name">{f.original}</span>
+                            <span className={`swap-state ${current}`} data-testid={`status-swap-${f.id}`}>{current === 'substitute' ? 'Using substitute' : 'Keeping original'}</span>
+                          </summary>
+                          <dl className="swap-facts">
+                            <div><dt>Why it matters</dt><dd>{f.why}</dd></div>
+                            <div><dt>Suggested substitute</dt><dd>{f.substitute}</dd></div>
+                            <div><dt>What changes</dt><dd>{f.changes}</dd></div>
+                            <div><dt>Can it be omitted?</dt><dd>{f.omittable}</dd></div>
+                          </dl>
+                          <div className="swap-options" role="group" aria-label={`Choice for ${f.original}`}>
+                            {(['original', 'substitute'] as const).map((opt) => (
+                              <button
+                                type="button"
+                                key={opt}
+                                aria-pressed={current === opt}
+                                className={`swap-btn${current === opt ? ' active' : ''}${rec === opt ? ' recommended' : ''}`}
+                                onClick={() => setSwaps({ ...swaps, [f.id]: opt })}
+                                data-testid={`button-${opt === 'original' ? 'keep-original' : 'use-substitute'}-${f.id}`}
+                              >
+                                <span className="swap-kind">{opt === 'original' ? 'Best authentic choice' : 'Easier-to-find alternative'}</span>
+                                <span className="swap-label">{opt === 'original' ? 'Keep original' : 'Use substitute'}</span>
+                                <span className="swap-sub">{opt === 'original' ? f.original : f.substitute}</span>
+                                {rec === opt && <span className="rec-badge">Recommended</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </details>
+                      );
+                    })}
+                  </div>
                 </section>
                 <p className="method-note" data-testid="text-cooking-guidance"><strong>How it comes together:</strong> {plan.method}</p>
                 <div className="plan-topline" style={{ margin: '18px 2px 0' }}>
                   <span className="plan-label">A helpful first cook</span>
                   <span style={{ color: '#879087', fontSize: 11 }}>Prepared locally · no live checks</span>
                 </div>
+                <p className="sim-note" data-testid="text-ai-simulation"><span className="sim-badge">Prototype AI Simulation</span> This prototype demonstrates how AI could interpret your cooking and shopping constraints and adapt a plan. Current recommendations use prepared prototype logic rather than a live generative-AI model or live store inventory.</p>
               </div>
             )}
           </section>

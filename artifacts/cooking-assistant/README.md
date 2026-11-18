@@ -1,4 +1,4 @@
-# Kitchen Fieldnotes — International Cooking Assistant
+# CuisineIQ — International Cooking Assistant
 
 ## Purpose and intended user
 
