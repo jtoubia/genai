@@ -1,0 +1,135 @@
+import { img, ing, t, type DietSwap, type Recipe } from '../types';
+
+const nonDairyYogurt = (amt: number, unit: string): DietSwap => ({ auto: true, ing: { name: 'Plain unsweetened non-dairy yogurt', amt, unit, note: 'Dairy-free marinade alternative. Choose a neutral, unsweetened style; it tenderizes but is less tangy and creamy than dairy yogurt.', label: 'Dairy-free alternative' }, why: 'Expect less tang and creaminess.' });
+const coconutCream = (amt: number): DietSwap => ({ auto: true, ing: { name: 'Full-fat coconut milk or cashew cream', amt, unit: 'ml', note: 'Dairy-free alternative to cream. Coconut adds a faint coconut flavor; cashew cream is more neutral.', label: 'Dairy-free alternative' }, why: 'Still rich and silky, with a slightly different flavor.' });
+const vegProtein: DietSwap[] = [
+  { ing: { name: 'Paneer, cubed', amt: 250, unit: 'g', note: 'Firm Indian cheese that holds its shape in sauce.', contains: ['dairy'], specialty: true, source: 'indian' }, why: 'A classic vegetarian swap; mild and milky.' },
+  { ing: { name: 'Extra-firm tofu or chickpeas', amt: 250, unit: 'g', note: 'Press tofu dry, or rinse canned chickpeas.' }, why: 'Plant-based option; softer and milder than chicken.' },
+];
+
+export const biryani: Recipe = {
+  id: 'biryani',
+  name: 'Chicken biryani',
+  cuisine: 'Indian',
+  origin: 'South Asia · layered, aromatic rice',
+  image: img('biryani.jpg'),
+  alt: 'Pot of chicken biryani with saffron-streaked basmati rice, fried onions and mint',
+  aliases: ['biryani', 'biriyani', 'chicken biriyani', 'biriani'],
+  summary: 'A one-pot, warmly spiced rice dish. Marinate the chicken, then gently steam it with fragrant basmati.',
+  prep: 40, cook: 45, difficulty: 'Moderate',
+  equipment: ['Heavy pot with a tight lid', 'Mixing bowl', 'Fine strainer'],
+  ingredients: [
+    ing('chicken', 'Chicken thighs', 300, 'g', 'Cut into medium pieces; they remain juicy during the covered cooking.', { text: t('300 g', '600 g'), contains: ['meat'], swaps: [{ ing: { name: 'Mixed vegetables and chickpeas', amt: 300, unit: 'g', note: 'Carrots, green beans, cauliflower and drained chickpeas.' }, why: 'A vegetable biryani is a common variation; lighter and less savory.' }] }),
+    ing('basmati', 'Basmati rice', 200, 'g', 'Long-grain rice with a delicate aroma; rinse and soak for 20 minutes, then drain.', { text: t('200 g (1 cup)', '400 g (2 cups)'), k: ['rice'] }),
+    ing('onion', 'Yellow onion', 1, 'medium', 'Sliced and browned for sweetness and a savory base.', { text: t('1 medium', '2 medium'), k: ['onions'] }),
+    ing('tomato', 'Tomato', 1, 'medium', 'Adds gentle acidity and moisture to the chicken masala.', { text: t('1 medium', '2 medium'), k: ['tomatoes'] }),
+    ing('ginger-garlic', 'Ginger-garlic paste', 1, 'tbsp', 'A finely ground aromatic base; grated ginger and garlic work if paste is unavailable.', { text: t('1 tbsp', '2 tbsp'), label: 'Approximation', k: ['ginger', 'garlic paste'] }),
+    ing('yogurt', 'Plain yogurt', 1 / 3, 'cup', 'A tangy marinade that helps coat and tenderize the chicken.', { text: t('⅓ cup', '⅔ cup'), contains: ['dairy'], swaps: [{ ...nonDairyYogurt(1 / 3, 'cup'), ing: { ...nonDairyYogurt(1 / 3, 'cup').ing, text: t('⅓ cup', '⅔ cup') } }] }),
+    ing('ghee', 'Ghee', 2, 'tbsp', 'Clarified butter used for browning and layering; it contributes a buttery, rich aroma.', { text: t('2 tbsp', '4 tbsp'), label: 'Traditional', contains: ['dairy'], swaps: [{ auto: true, ing: { name: 'Neutral cooking oil', amt: 2, unit: 'tbsp', text: t('2 tbsp', '4 tbsp'), note: 'Dairy-free alternative to ghee for browning and layering; it tastes less buttery and rich.', label: 'Dairy-free alternative' }, why: 'A less buttery, rich finish.' }] }),
+    ing('cilantro', 'Fresh cilantro', 0.25, 'cup leaves', 'A fresh, green finish layered between rice and chicken.', { text: t('¼ cup leaves', '½ cup leaves'), k: ['coriander leaves'] }),
+    ing('mint', 'Fresh mint', 0.25, 'cup leaves', 'Adds cool herbal lift and balances the warm spices.', { text: t('¼ cup leaves', '½ cup leaves') }),
+    ing('water', 'Water', 1.25, 'cups', 'For gently steaming the rice and chicken together; adjust slightly for your pot.', { text: t('1¼ cups', '2½ cups') }),
+    ing('biryani-spice', 'Biryani masala', 1.5, 'tbsp', 'A blended spice mix, commonly including warm spices such as cumin, coriander, and cardamom. Brands vary; check the label.', { text: t('1½ tbsp', '3 tbsp'), specialty: true, source: 'indian', label: 'Traditional', heat: true, k: ['masala', 'biryani spice'] }),
+    ing('whole-spices', 'Whole spices: cinnamon, cardamom, cloves', null, '', 'Whole aromatics infuse the rice as it steams; remove or eat around them.', { text: t('1 small stick, 2 pods, 3 cloves', '2 small sticks, 4 pods, 6 cloves'), specialty: true, source: 'indian', label: 'Traditional', k: ['cardamom', 'cinnamon', 'cloves'] }),
+    ing('saffron', 'Saffron threads (optional)', null, '', 'Adds floral aroma and gold color. There is no close substitute for saffron’s particular aroma; simply omit it if unavailable.', { text: t('A small pinch', '2 small pinches'), specialty: true, source: 'indian', label: 'Traditional', optional: true }),
+  ],
+  fallbacks: [
+    { target: 'biryani-spice', why: 'A balanced blend that gives biryani its layered warm-spice flavor.', substitute: 'Garam masala plus a pinch of ground turmeric', changes: 'Warm and aromatic, but less complex and less specifically "biryani".', omittable: 'Not recommended to omit; it carries most of the flavor.', ing: { name: 'Garam masala + pinch of turmeric', amt: null, text: t('1½ tbsp + ¼ tsp', '3 tbsp + ½ tsp'), note: 'Common supermarket spice blend standing in for biryani masala.', label: 'Approximation', heat: true } },
+    { target: 'whole-spices', why: 'They slowly infuse the rice as it steams.', substitute: 'Ground cinnamon and ground cardamom', changes: 'Flavor is less layered and can turn slightly muddy if overused; use sparingly.', omittable: 'Can be omitted if your masala is fragrant.', ing: { name: 'Ground cinnamon + ground cardamom', amt: 0.25, unit: 'tsp each', note: 'Stir into the rice with the water; easier to find than whole spices.', label: 'Approximation' } },
+    { target: 'saffron', why: 'Adds floral aroma and golden streaks.', substitute: 'Skip it (no close substitute)', changes: 'You lose the floral aroma and gold color; the dish is still complete.', omittable: 'Yes, it is already optional.', ing: null },
+  ],
+  steps: [
+    { title: 'Rinse and soak the rice', text: 'Rinse {basmati} until the water is mostly clear, then soak for 20 minutes and drain.', minutes: '20 min', tip: 'Soaking helps the grains cook long and separate.' },
+    { title: 'Marinate the chicken', text: 'Coat {chicken} with {yogurt}, {biryani-spice} and {ginger-garlic}. Rest while the rice soaks.', minutes: '15–30 min', tip: 'Refrigerate if marinating longer than 30 minutes.', heat: { Mild: 'Mild: you are using less masala; the whole spices keep it fragrant.', Spicy: 'Spicy: extra masala; add a sliced green chili too if you like.' }, safety: { ing: 'chicken', text: 'Wash hands, bowl and board after handling raw chicken.' } },
+    { title: 'Brown the onions', text: 'Heat {ghee} in a heavy pot over medium heat. Cook thinly sliced {onion} until deep golden.', minutes: '10–12 min', tip: 'Patience here builds the savory base; stir more often as they darken.' },
+    { title: 'Cook the chicken base', text: 'Add the marinated {chicken} and chopped {tomato}. Cook, stirring, until the sauce thickens.', minutes: '5–7 min' },
+    { title: 'Layer and steam', text: 'Add {whole-spices}, scatter {cilantro} and {mint}, then spread the drained {basmati} on top. Pour in {water} and add {saffron} soaked in a spoonful of warm water. Bring to a simmer, cover tightly and cook on low until the rice is tender and the chicken is cooked through.', minutes: '20–25 min', alt: { saffron: 'Add {whole-spices}, scatter {cilantro} and {mint}, then spread the drained {basmati} on top. Pour in {water}. Bring to a simmer, cover tightly and cook on low until the rice is tender and the chicken is cooked through.' }, safety: { ing: 'chicken', text: 'Chicken is safe at 165°F (74°C) in the thickest piece.' } },
+    { title: 'Rest and fluff', text: 'Turn off the heat and rest, covered, then fluff gently from the edges so the layers stay distinct.', minutes: '5–10 min' },
+  ],
+  dietaryNote: 'This prepared version uses yogurt and ghee. For Dairy-free mode, they are replaced with plain unsweetened non-dairy yogurt and neutral cooking oil. Expect less tang and creaminess from the yogurt and a less buttery, rich finish from the oil. Check packaged labels; this plan does not claim allergy safety.',
+  method: 'Coat chicken with the yogurt listed for your dietary choice, biryani masala, and ginger-garlic paste. Brown onion in the listed cooking fat; add chicken and tomato. Fold in drained rice, water, whole spices, herbs, and saffron if using. Cover tightly and cook over low heat until rice is tender and chicken is cooked through.',
+};
+
+const sharedIndian = {
+  kashmiri: (amt: number) => ing('kashmiri-chili', 'Kashmiri chili powder', amt, 'tsp', 'Vivid red, mild-to-medium chili powder that colors the sauce.', { specialty: true, source: 'indian', label: 'Traditional', heat: true, k: ['chili powder', 'kashmiri'] }),
+  kashmiriFallback: { target: 'kashmiri-chili', why: 'Brings the signature red color with moderate heat.', substitute: 'Sweet paprika plus a pinch of cayenne', changes: 'Similar color; slightly different, less fruity flavor. Cayenne is hotter, so go easy.', omittable: 'Can be omitted for a milder, paler sauce.', ing: { name: 'Sweet paprika + pinch of cayenne', amt: null, text: t('1 tsp paprika + pinch cayenne', '2 tsp paprika + 2 pinches cayenne'), note: 'Supermarket stand-in for Kashmiri chili.', label: 'Approximation' as const, heat: true } },
+};
+
+export const butterChicken: Recipe = {
+  id: 'butter-chicken',
+  name: 'Butter chicken',
+  cuisine: 'Indian',
+  origin: 'North India · mild, creamy tomato sauce',
+  image: img('butter-chicken.jpg'),
+  alt: 'Bowl of butter chicken in a glossy orange tomato cream sauce with cilantro and naan',
+  aliases: ['murgh makhani', 'murg makhani', 'chicken makhani'],
+  summary: 'Marinated chicken finished in a silky, gently spiced tomato-butter sauce. Comforting and usually mild.',
+  prep: 35, cook: 35, difficulty: 'Moderate',
+  equipment: ['Large skillet or pot', 'Mixing bowl', 'Blender (optional, for a smooth sauce)'],
+  ingredients: [
+    ing('chicken', 'Boneless chicken thighs', 350, 'g', 'Cut into bite-size pieces.', { contains: ['meat'], swaps: vegProtein }),
+    ing('yogurt', 'Plain yogurt', 3, 'tbsp', 'Marinade that tenderizes and helps spices cling.', { contains: ['dairy'], swaps: [nonDairyYogurt(3, 'tbsp')] }),
+    ing('lemon', 'Lemon', 0.5, '', 'Juice for the marinade.'),
+    sharedIndian.kashmiri(1),
+    ing('garam-masala', 'Garam masala', 1.5, 'tsp', 'Warm spice blend; widely sold in supermarkets.'),
+    ing('ginger-garlic', 'Ginger-garlic paste', 1, 'tbsp', 'Or equal parts grated ginger and garlic.', { k: ['ginger', 'garlic'] }),
+    ing('butter', 'Unsalted butter', 2, 'tbsp', 'For the sauce; gives the dish its name and richness.', { contains: ['dairy'], swaps: [{ auto: true, ing: { name: 'Plant-based butter or neutral oil', amt: 2, unit: 'tbsp', note: 'Dairy-free alternative; less buttery aroma.', label: 'Dairy-free alternative' }, why: 'Less buttery; plant butters vary by brand.' }] }),
+    ing('onion', 'Yellow onion', 1, 'small', 'Finely chopped.', { k: ['onions'] }),
+    ing('tomato', 'Tomato passata or crushed tomatoes', 200, 'g', 'The base of the sauce.', { k: ['tomatoes', 'passata'] }),
+    ing('cream', 'Heavy cream', 80, 'ml', 'Stirred in at the end for silkiness.', { contains: ['dairy'], swaps: [coconutCream(80)] }),
+    ing('methi', 'Kasuri methi (dried fenugreek leaves)', 1, 'tsp', 'Crushed between your palms; adds a savory, slightly bitter herbal note.', { specialty: true, source: 'indian', label: 'Traditional', k: ['fenugreek', 'kasuri methi'] }),
+    ing('sugar', 'Sugar', 0.5, 'tsp', 'Balances the tomato acidity.'),
+    ing('basmati', 'Basmati rice', 150, 'g', 'For serving.', { k: ['rice'] }),
+    ing('cilantro', 'Fresh cilantro', 2, 'tbsp, chopped', 'Garnish.'),
+  ],
+  fallbacks: [
+    sharedIndian.kashmiriFallback,
+    { target: 'methi', why: 'A distinctive savory-herbal note that makes the sauce taste restaurant-style.', substitute: 'Leave it out (no close substitute)', changes: 'The sauce is still good but tastes simpler and less aromatic.', omittable: 'Yes.', ing: null },
+  ],
+  steps: [
+    { title: 'Marinate', text: 'Mix {chicken} with {yogurt}, juice of the {lemon}, half the {kashmiri-chili} and half the {garam-masala}.', minutes: '20 min', tip: 'Refrigerate if marinating longer than 30 minutes.', safety: { ing: 'chicken', text: 'Wash hands and surfaces after handling raw chicken.' } },
+    { title: 'Sear the chicken', text: 'Melt half of {butter} in a skillet over medium-high heat and sear {chicken} until browned on the outside. Set aside; it finishes in the sauce.', minutes: '5–6 min' },
+    { title: 'Build the sauce', text: 'Add the rest of {butter} and {onion}; cook until soft. Stir in {ginger-garlic} and the remaining spices for 1 minute, then add {tomato} and simmer.', minutes: '15 min', tip: 'Blend the sauce at this point if you want it very smooth.', heat: { Mild: 'Mild: less chili powder; the sauce stays gently warm.', Spicy: 'Spicy: more chili powder; add a pinch of cayenne for real heat.' } },
+    { title: 'Finish', text: 'Return {chicken} to the pan with {cream}, crushed {methi} and {sugar}. Simmer until the chicken is cooked through and the sauce is silky.', minutes: '8–10 min', safety: { ing: 'chicken', text: 'Chicken is safe at 165°F (74°C).' } },
+    { title: 'Serve', text: 'Serve with cooked {basmati}, scattered with {cilantro}.', minutes: '2 min' },
+  ],
+  dietaryNote: 'Butter chicken traditionally uses yogurt, butter and cream. Dairy-free mode swaps all three and explains the difference. Check packaged labels; this is not an allergy-safety claim.',
+};
+
+export const tikkaMasala: Recipe = {
+  id: 'tikka-masala',
+  name: 'Chicken tikka masala',
+  cuisine: 'Indian',
+  origin: 'Indian / British · charred chicken, spiced sauce',
+  image: img('tikka-masala.jpg'),
+  alt: 'Charred chicken tikka pieces in a creamy orange spiced sauce with basmati rice',
+  aliases: ['tikka masala', 'chicken tikka'],
+  summary: 'Yogurt-marinated chicken, charred, then simmered in a spiced tomato-cream sauce. Bolder and more charred than butter chicken.',
+  prep: 40, cook: 35, difficulty: 'Moderate',
+  equipment: ['Large skillet or broiler pan', 'Mixing bowl', 'Pot or deep skillet'],
+  ingredients: [
+    ing('chicken', 'Boneless chicken thighs or breast', 350, 'g', 'Cut into large bite-size chunks.', { contains: ['meat'], swaps: vegProtein }),
+    ing('yogurt', 'Plain yogurt', 4, 'tbsp', 'The tikka marinade base.', { contains: ['dairy'], swaps: [nonDairyYogurt(4, 'tbsp')] }),
+    ing('lemon', 'Lemon', 0.5, '', 'Juice for the marinade.'),
+    ing('ginger-garlic', 'Ginger-garlic paste', 1, 'tbsp', 'Or grated ginger and garlic.', { k: ['ginger', 'garlic'] }),
+    ing('garam-masala', 'Garam masala', 2, 'tsp', 'Warm spice blend.'),
+    ing('cumin', 'Ground cumin', 1, 'tsp', 'Earthy warmth.'),
+    ing('turmeric', 'Ground turmeric', 0.5, 'tsp', 'Color and earthy depth.'),
+    sharedIndian.kashmiri(1),
+    ing('oil', 'Neutral cooking oil', 2, 'tbsp', 'For searing and the sauce.'),
+    ing('onion', 'Yellow onion', 1, '', 'Finely chopped.', { k: ['onions'] }),
+    ing('tomato', 'Crushed tomatoes', 200, 'g', 'Sauce base.', { k: ['tomatoes'] }),
+    ing('cream', 'Heavy cream', 80, 'ml', 'Makes the sauce creamy.', { contains: ['dairy'], swaps: [coconutCream(80)] }),
+    ing('basmati', 'Basmati rice', 150, 'g', 'For serving.', { k: ['rice'] }),
+    ing('cilantro', 'Fresh cilantro', 2, 'tbsp, chopped', 'Garnish.'),
+  ],
+  fallbacks: [sharedIndian.kashmiriFallback],
+  steps: [
+    { title: 'Marinate', text: 'Mix {chicken} with {yogurt}, juice of the {lemon}, {ginger-garlic}, half the {garam-masala} and half the {kashmiri-chili}.', minutes: '30 min', tip: 'Up to overnight in the fridge for deeper flavor.' },
+    { title: 'Char the chicken', text: 'Heat 1 tbsp of {oil} in a skillet over high heat (or use a broiler). Cook {chicken} until charred at the edges; it finishes in the sauce.', minutes: '6–8 min', tip: 'Do not crowd the pan, or the chicken steams instead of charring.' },
+    { title: 'Cook the masala', text: 'In the remaining {oil}, cook {onion} until golden. Add {cumin}, {turmeric} and the rest of the spices for 1 minute, then {tomato}. Simmer until thick.', minutes: '15 min', heat: { Mild: 'Mild: less chili powder.', Spicy: 'Spicy: more chili powder, plus a chopped green chili if you like.' } },
+    { title: 'Finish', text: 'Stir in {cream} and the charred {chicken}. Simmer until the chicken is cooked through.', minutes: '5–8 min', safety: { ing: 'chicken', text: 'Chicken is safe at 165°F (74°C).' } },
+    { title: 'Serve', text: 'Serve over {basmati} with {cilantro}.', minutes: '2 min' },
+  ],
+  dietaryNote: 'Tikka masala uses yogurt and cream. Dairy-free mode replaces both and explains the difference. Check labels; this is not an allergy-safety claim.',
+};

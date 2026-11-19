@@ -1,74 +1,78 @@
-import { useState, type FormEvent } from 'react';
-import { ArrowRight, MapPin, ShoppingBasket } from 'lucide-react';
-import {
-  dishes,
-  locationText,
-  planFor,
-  prototypeDisclosure,
-  storeOptionDisclosure,
-  type Diet,
-  type DishId,
-  type Ingredient,
-} from './prepared-plans';
-import { buildShoppingPlan, interpretRequest, recommendedChoices, type SwapChoice } from './chef-request';
+import { useMemo, useState, type FormEvent } from 'react';
+import { MapPin, ShoppingBasket } from 'lucide-react';
+import { recipeById } from './data/recipes';
+import { Discover } from './components/Discover';
+import { CustomizeForm, type Choices } from './components/CustomizeForm';
+import { AdaptedSection, CookSection, ShoppingSection, StoresSection, SubstitutionSection } from './components/PlanSections';
+import { buildPlan, initialDecisions, type Decisions, type PlanInput, type SwapChoice } from './lib/plan-engine';
+import { buildStorePlan } from './lib/store-plan';
+import { aiSimulationText, allergyText, locationText, prototypeDisclosure } from './prepared-plans';
 
-type Choices = { dish: DishId | ''; servings: 2 | 4; diet: Diet; request: string };
+const defaultChoices: Choices = { dish: '', servings: 2, diets: [], spice: 'Medium', atHome: '', request: '', location: '46601', strategy: 'authentic' };
 
-const unrecognizedMessage = "We couldn't confidently apply that request yet. Your standard shopping plan is shown below, and your request has not been applied.";
+const scrollTo = (id: string) => window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
 
-function IngredientList({ items, servings, group }: { items: Ingredient[]; servings: 2 | 4; group: string }) {
-  return (
-    <ul className="ingredient-list" data-testid={`list-${group}-ingredients`}>
-      {items.map((item) => (
-        <li className="ingredient" key={item.id} data-testid={`ingredient-${item.id}`}>
-          <div className="ingredient-head">
-            <span className="ingredient-name" data-testid={`text-ingredient-name-${item.id}`}>
-              {item.name}
-              {item.label && <span className="ingredient-tag">{item.label}</span>}
-            </span>
-            <span className="ingredient-qty" data-testid={`text-quantity-${item.id}`}>{item.quantity[servings]}</span>
-          </div>
-          <p className="ingredient-detail" data-testid={`text-ingredient-explanation-${item.id}`}>{item.explanation}</p>
-        </li>
-      ))}
-    </ul>
-  );
-}
+const toInput = (c: Choices): PlanInput | null => {
+  const recipe = recipeById(c.dish);
+  return recipe ? { recipe, servings: c.servings, diets: c.diets, spice: c.spice, request: c.request, atHome: c.atHome, strategy: c.strategy } : null;
+};
+
+const NAV = [
+  { id: 'discover', label: 'Discover' },
+  { id: 'customize', label: 'Customize' },
+  { id: 'shopping', label: 'Shopping Plan' },
+  { id: 'cook', label: 'Cook' },
+];
 
 function Home() {
-  const [choices, setChoices] = useState<Choices>({ dish: '', servings: 2, diet: 'No restriction', request: '' });
-  const [swaps, setSwaps] = useState<Record<string, SwapChoice>>({});
+  const [query, setQuery] = useState('');
+  const [choices, setChoices] = useState<Choices>(defaultChoices);
   const [submitted, setSubmitted] = useState<Choices | null>(null);
+  const [decisions, setDecisions] = useState<Decisions>({ swaps: {}, diet: {} });
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(true);
-  const plan = submitted?.dish ? planFor(submitted.dish, submitted.diet) : null;
-  const interp = plan && submitted ? interpretRequest(submitted.request, plan, submitted.diet) : null;
-  const recommended = plan && interp ? recommendedChoices(plan, interp) : {};
-  const shopping = plan && interp ? buildShoppingPlan(plan, interp, swaps) : null;
+  const [shopChecked, setShopChecked] = useState<Set<string>>(new Set());
+  const [stepsDone, setStepsDone] = useState<Set<number>>(new Set());
+
+  const input = useMemo(() => (submitted ? toInput(submitted) : null), [submitted]);
+  const plan = useMemo(() => (input ? buildPlan(input, decisions) : null), [input, decisions]);
+  const storePlan = useMemo(() => (plan && submitted ? buildStorePlan(plan, submitted.location, submitted.strategy) : null), [plan, submitted]);
+  const selectedRecipe = recipeById(choices.dish);
+
+  function selectDish(id: string) {
+    setChoices({ ...choices, dish: id });
+    setError('');
+    scrollTo('customize');
+  }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!choices.dish) {
-      setError('Choose a dish to create your shopping plan.');
+    const next = toInput(choices);
+    if (!next) {
+      setError(query.trim() ? 'Choose a supported dish from Discover or the list to create your plan.' : 'Choose a dish to create your shopping plan.');
       document.getElementById('dish')?.focus();
       return;
     }
     setError('');
     setSubmitted({ ...choices });
-    if (choices.dish) {
-      const nextPlan = planFor(choices.dish, choices.diet);
-      setSwaps(recommendedChoices(nextPlan, interpretRequest(choices.request, nextPlan, choices.diet)));
-    }
+    setDecisions(initialDecisions(next));
+    setShopChecked(new Set());
+    setStepsDone(new Set());
     setEditing(false);
-    window.setTimeout(() => document.getElementById('plan-heading')?.scrollIntoView({ block: 'start' }), 0);
+    scrollTo('plan-heading');
   }
 
   function editChoices() {
-    setChoices(submitted ?? choices);
     setEditing(true);
     setError('');
-    document.getElementById('choice-form')?.scrollIntoView({ block: 'start' });
+    scrollTo('customize');
   }
+
+  const toggle = <T,>(set: Set<T>, v: T) => {
+    const next = new Set(set);
+    if (next.has(v)) next.delete(v); else next.add(v);
+    return next;
+  };
 
   return (
     <div className="app-shell">
@@ -79,220 +83,100 @@ function Home() {
         </div>
         <div className="topbar-note" data-testid="text-prototype-status">A little help, before the first chop</div>
       </header>
+      <nav className="step-nav" aria-label="Cooking journey">
+        <ol>
+          {NAV.map((n, i) => {
+            const locked = (n.id === 'shopping' || n.id === 'cook') && !plan;
+            return (
+              <li key={n.id}>
+                <button type="button" onClick={() => scrollTo(n.id === 'shopping' && plan ? 'shopping' : n.id)} disabled={locked} title={locked ? 'Create a plan first' : undefined} data-testid={`nav-${n.id}`}>
+                  <span className="nav-num">{i + 1}</span>{n.label}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
       <main className="main-wrap">
         <section className="intro" aria-labelledby="page-title">
           <div>
             <p className="eyebrow">International cooking, made approachable</p>
             <h1 id="page-title">From dish idea to shopping plan.</h1>
-            <p className="intro-copy">Choose a dish to discover what you need, understand unfamiliar ingredients, and find places to look for them.</p>
+            <p className="intro-copy">Find a dish, shape it around your kitchen and diet, see exactly what to buy, and cook it step by step.</p>
           </div>
           <div className="location-card" data-testid="text-demo-location">
             <MapPin size={15} aria-hidden="true" />
-            <span><span className="location-label">Fixed demo location</span>{locationText}</span>
+            <span><span className="location-label">Demo store location</span>{locationText}</span>
           </div>
         </section>
 
-        <div className="workspace">
-          <section className="panel form-panel" aria-labelledby="form-heading">
-            <div className="panel-heading">
-              <div>
-                <h2 id="form-heading">Set your table</h2>
-                <p>Three quick choices. No guesswork required.</p>
-              </div>
-              <span className="step-tag">Your plan</span>
-            </div>
-            <form id="choice-form" onSubmit={submit} noValidate>
-              <fieldset className="field" style={{ border: 0, padding: 0, marginInline: 0 }}>
-                <legend className="field-label">What would you like to cook? <span className="required">Required</span></legend>
-                <div className="select-wrap">
-                  <select
-                    id="dish"
-                    value={choices.dish}
-                    required
-                    aria-invalid={Boolean(error && !choices.dish)}
-                    aria-describedby={error ? 'dish-error' : undefined}
-                    className={error && !choices.dish ? 'invalid' : ''}
-                    onChange={(event) => { setChoices({ ...choices, dish: event.target.value as DishId }); setError(''); }}
-                    data-testid="select-dish"
-                  >
-                    <option value="">Choose a dish</option>
-                    {dishes.map((dish) => <option value={dish.id} key={dish.id}>{dish.name}</option>)}
-                  </select>
-                </div>
-                {error && <p id="dish-error" className="error-message" role="alert" data-testid="error-required-dish">{error}</p>}
-              </fieldset>
+        <Discover query={query} onQuery={setQuery} selectedId={choices.dish} onSelect={selectDish} />
 
-              <div className="field">
-                <label className="field-label" htmlFor="servings">How many servings?</label>
-                <div className="select-wrap">
-                  <select id="servings" value={choices.servings} onChange={(event) => setChoices({ ...choices, servings: Number(event.target.value) as 2 | 4 })} data-testid="select-servings">
-                    <option value={2}>2 servings</option>
-                    <option value={4}>4 servings</option>
-                  </select>
-                </div>
-              </div>
-              <div className="field">
-                <label className="field-label" htmlFor="diet">Dietary preference</label>
-                <div className="select-wrap">
-                  <select id="diet" value={choices.diet} onChange={(event) => setChoices({ ...choices, diet: event.target.value as Diet })} data-testid="select-diet">
-                    <option>No restriction</option>
-                    <option>Dairy-free</option>
-                  </select>
-                </div>
-                <p className="field-hint">Packaged ingredients vary. Always check labels for your needs.</p>
-              </div>
-              <div className="field">
-                <label className="field-label" htmlFor="chef-request">Tell the chef what you need <span className="optional">Optional</span></label>
-                <textarea
-                  id="chef-request"
-                  className="chef-textarea"
-                  rows={4}
-                  value={choices.request}
-                  placeholder="I already have chicken and rice. Make it mild and help me buy everything else at one store."
-                  onChange={(event) => setChoices({ ...choices, request: event.target.value })}
-                  data-testid="input-chef-request"
-                />
-                <p className="field-hint">Optional — tell us what you already have, ingredients you cannot find, how you want the dish to taste, or how you want to shop.</p>
-              </div>
-              <button className="submit-button" type="submit" data-testid="button-submit-plan">
-                Create my shopping plan.
-                <ArrowRight size={16} aria-hidden="true" />
-              </button>
-              <p className="quiet-note">Recommendations use prepared recipe notes and illustrative store matching. You stay in charge of what goes in your basket.</p>
-            </form>
-          </section>
+        <div className="workspace">
+          <CustomizeForm
+            choices={choices}
+            setChoices={setChoices}
+            recipe={selectedRecipe}
+            error={error}
+            clearError={() => setError('')}
+            onSubmit={submit}
+            onBrowse={() => scrollTo('discover')}
+            hasPlan={!!plan}
+          />
 
           <section className="panel result-panel" aria-live="polite" aria-labelledby="plan-heading" data-testid="section-shopping-plan">
-            {!plan ? (
+            {!plan || !submitted ? (
               <div className="result-empty">
                 <div className="empty-icon"><ShoppingBasket size={24} aria-hidden="true" /></div>
                 <p className="eyebrow">Your next step</p>
                 <h2 id="plan-heading">A clear list, with the unfamiliar bits explained.</h2>
-                <p>Choose a dish to see what’s likely a regular supermarket find, what may call for an international grocer, and what each ingredient brings to the plate.</p>
+                <p>Choose a dish and create your plan to see what is already in your kitchen, what to buy, which swaps make sense, and every step to cook it.</p>
               </div>
             ) : (
               <div className="result-ready">
                 <div className="plan-top">
                   <div className="plan-topline">
-                    <span className="plan-label" data-testid="text-plan-state">{editing ? 'Editing choices' : 'Prepared shopping plan'}</span>
-                    {!editing && <button type="button" onClick={editChoices} className="edit-button" data-testid="button-edit-choices">Edit my choices</button>}
+                    <span className="plan-label" data-testid="text-plan-state">{editing ? 'Editing choices' : 'Your Cooking Plan'}</span>
+                    <button type="button" onClick={editChoices} className="edit-button" data-testid="button-edit-choices">Edit my choices</button>
                   </div>
-                  <h2 className="plan-title" id="plan-heading" data-testid="text-plan-title">{plan.name}</h2>
-                  <div className="choice-chips" data-testid="group-submitted-choices">
-                    <span className="choice-chip" data-testid="text-submitted-dish">{plan.name}</span>
-                    <span className="choice-chip" data-testid="text-submitted-servings">{submitted?.servings} servings</span>
-                    <span className="choice-chip" data-testid="text-submitted-diet">{submitted?.diet}</span>
-                  </div>
-                  <p className="plan-intro" style={{ marginTop: 12 }} data-testid="text-plan-summary">{plan.summary}</p>
-                </div>
-                {interp?.hasRequest && (
-                  interp.understood ? (
-                    <section className="adapted-card" aria-labelledby="adapted-heading" data-testid="section-adapted-plan">
-                      <div className="adapted-head">
-                        <h3 id="adapted-heading">Your Adapted Plan</h3>
-                        <span className="sim-badge">Prototype AI Simulation</span>
+                  <div className="plan-hero">
+                    <img src={plan.recipe.image} alt={plan.recipe.alt} width={120} height={120} data-testid="img-plan-dish" />
+                    <div>
+                      <h2 className="plan-title" id="plan-heading" data-testid="text-plan-title">{plan.recipe.name}</h2>
+                      <div className="choice-chips" data-testid="group-submitted-choices">
+                        <span className="choice-chip" data-testid="text-submitted-dish">{plan.recipe.name}</span>
+                        <span className="choice-chip" data-testid="text-submitted-servings">{submitted.servings} {submitted.servings === 1 ? 'serving' : 'servings'}</span>
+                        <span className="choice-chip" data-testid="text-submitted-diet">{submitted.diets.length ? submitted.diets.join(' + ') : 'No restriction'}</span>
+                        <span className="choice-chip" data-testid="text-submitted-spice">{plan.effectiveSpice} spice</span>
+                        <span className="choice-chip">{plan.recipe.prep + plan.recipe.cook} min total</span>
+                        <span className="choice-chip">{submitted.strategy === 'simplest' ? 'Simplest trip' : 'Most authentic'}</span>
                       </div>
-                      <p className="adapted-quote" data-testid="text-chef-request">“{submitted!.request.trim()}”</p>
-                      <ul className="adapt-list">
-                        {interp.cards.map((card, i) => (
-                          <li key={i} className="adapt-item" data-testid={`card-adaptation-${i}`}>
-                            <span className="adapt-kind">{card.kind}</span>
-                            <span>{card.text}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  ) : (
-                    <p className="notice notice-muted" role="status" data-testid="notice-request-unrecognized">{unrecognizedMessage}</p>
-                  )
-                )}
-                <p className="notice" data-testid="notice-dietary"><strong>Dietary note:</strong> {plan.dietaryNote}</p>
-
-                {shopping && shopping.atHome.length > 0 && (
-                  <section className="section-card" aria-labelledby="home-heading" data-testid="section-at-home">
-                    <div className="section-title">
-                      <h3 id="home-heading">Already at home</h3>
-                      <span className="store-name home-pill">Not on your list</span>
                     </div>
-                    <ul className="home-list">
-                      {shopping.atHome.map((item) => (
-                        <li key={item.id} data-testid={`text-at-home-${item.id}`}><span>{item.name}</span><span className="ingredient-qty">{item.quantity[submitted!.servings]}</span></li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
+                  </div>
+                  <p className="plan-intro" data-testid="text-plan-summary">{plan.recipe.summary}</p>
+                </div>
 
-                <section className="section-card" aria-labelledby="common-heading" data-testid="section-common-ingredients">
-                  <div className="section-title">
-                    <h3 id="common-heading">Common supermarket ingredients</h3>
-                    <span className="store-name" data-testid="text-common-store">Demo Neighborhood Supermarket</span>
-                  </div>
-                  <p className="store-disclaimer" data-testid="text-common-store-disclaimer">{storeOptionDisclosure}</p>
-                  <IngredientList items={shopping!.common} servings={submitted!.servings} group="common" />
-                </section>
-                <section className="section-card" aria-labelledby="specialty-heading" data-testid="section-specialty-ingredients">
-                  <div className="section-title">
-                    <h3 id="specialty-heading">Specialty ingredients</h3>
-                    <span className="store-name" data-testid="text-specialty-store">Demo Asian Grocery</span>
-                  </div>
-                  <p className="store-disclaimer" data-testid="text-specialty-store-disclaimer">{storeOptionDisclosure}</p>
-                  {shopping!.specialty.length > 0 ? (
-                    <IngredientList items={shopping!.specialty} servings={submitted!.servings} group="specialty" />
-                  ) : (
-                    <p className="empty-specialty" data-testid="text-specialty-empty">Nothing needed from the specialty grocer with your current choices. One supermarket trip covers the list.</p>
-                  )}
-                </section>
+                <AdaptedSection plan={plan} request={submitted.request} />
 
-                <section className="section-card" aria-labelledby="swap-heading" data-testid="section-substitution-review">
-                  <div className="section-title">
-                    <h3 id="swap-heading">Fallbacks and substitution review</h3>
-                    <span className="store-name">{shopping!.fallbacks.filter((f) => swaps[f.id] === 'substitute').length} of {shopping!.fallbacks.length} swapped</span>
-                  </div>
-                  <p className="control-note" data-testid="text-control-note">You stay in control — review suggested swaps before using your final shopping list.</p>
-                  <div className="swap-list">
-                    {shopping!.fallbacks.map((f) => {
-                      const current = swaps[f.id] ?? 'original';
-                      const rec = recommended[f.id] ?? 'original';
-                      return (
-                        <details className="swap" key={f.id} open={rec === 'substitute'} data-testid={`card-fallback-${f.id}`}>
-                          <summary>
-                            <span className="swap-name">{f.original}</span>
-                            <span className={`swap-state ${current}`} data-testid={`status-swap-${f.id}`}>{current === 'substitute' ? 'Using substitute' : 'Keeping original'}</span>
-                          </summary>
-                          <dl className="swap-facts">
-                            <div><dt>Why it matters</dt><dd>{f.why}</dd></div>
-                            <div><dt>Suggested substitute</dt><dd>{f.substitute}</dd></div>
-                            <div><dt>What changes</dt><dd>{f.changes}</dd></div>
-                            <div><dt>Can it be omitted?</dt><dd>{f.omittable}</dd></div>
-                          </dl>
-                          <div className="swap-options" role="group" aria-label={`Choice for ${f.original}`}>
-                            {(['original', 'substitute'] as const).map((opt) => (
-                              <button
-                                type="button"
-                                key={opt}
-                                aria-pressed={current === opt}
-                                className={`swap-btn${current === opt ? ' active' : ''}${rec === opt ? ' recommended' : ''}`}
-                                onClick={() => setSwaps({ ...swaps, [f.id]: opt })}
-                                data-testid={`button-${opt === 'original' ? 'keep-original' : 'use-substitute'}-${f.id}`}
-                              >
-                                <span className="swap-kind">{opt === 'original' ? 'Best authentic choice' : 'Easier-to-find alternative'}</span>
-                                <span className="swap-label">{opt === 'original' ? 'Keep original' : 'Use substitute'}</span>
-                                <span className="swap-sub">{opt === 'original' ? f.original : f.substitute}</span>
-                                {rec === opt && <span className="rec-badge">Recommended</span>}
-                              </button>
-                            ))}
-                          </div>
-                        </details>
-                      );
-                    })}
-                  </div>
-                </section>
-                <p className="method-note" data-testid="text-cooking-guidance"><strong>How it comes together:</strong> {plan.method}</p>
+                <p className="notice" data-testid="notice-dietary"><strong>Dietary note:</strong> {plan.recipe.dietaryNote}</p>
+                <p className="notice notice-allergy" data-testid="notice-allergy">{allergyText}</p>
+
+                <ShoppingSection plan={plan} checked={shopChecked} onToggle={(id) => setShopChecked(toggle(shopChecked, id))} />
+                <SubstitutionSection
+                  plan={plan}
+                  decisions={decisions}
+                  onSwap={(id, c: SwapChoice) => setDecisions({ ...decisions, swaps: { ...decisions.swaps, [id]: c } })}
+                  onDiet={(id, v) => setDecisions({ ...decisions, diet: { ...decisions.diet, [id]: v } })}
+                />
+                {storePlan && <StoresSection storePlan={storePlan} onChangeLocation={() => { editChoices(); window.setTimeout(() => document.getElementById('location')?.focus(), 350); }} />}
+                <CookSection plan={plan} done={stepsDone} onToggle={(n) => setStepsDone(toggle(stepsDone, n))} />
+
                 <div className="plan-topline" style={{ margin: '18px 2px 0' }}>
                   <span className="plan-label">A helpful first cook</span>
                   <span style={{ color: '#879087', fontSize: 11 }}>Prepared locally · no live checks</span>
                 </div>
-                <p className="sim-note" data-testid="text-ai-simulation"><span className="sim-badge">Prototype AI Simulation</span> This prototype demonstrates how AI could interpret your cooking and shopping constraints and adapt a plan. Current recommendations use prepared prototype logic rather than a live generative-AI model or live store inventory.</p>
+                <p className="sim-note" data-testid="text-ai-simulation"><span className="sim-badge">Prototype AI Simulation</span> {aiSimulationText}</p>
+                <button type="button" className="edit-button regen" onClick={editChoices} data-testid="button-revise-plan">Revise and regenerate this plan</button>
               </div>
             )}
           </section>
