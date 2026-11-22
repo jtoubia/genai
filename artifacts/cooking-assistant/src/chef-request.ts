@@ -1,7 +1,7 @@
 import { FORBIDDEN, type Diet, type IngredientDef, type Recipe, type Spice, type Tag } from './data/types';
 
 /**
- * Prototype AI Simulation: keyword and phrase matching over the chef request
+ * Rule-based adaptation: keyword and phrase matching over the chef request
  * and the "already at home" field. It never invents an adaptation it does not
  * recognize; unknown requests are reported as not applied.
  */

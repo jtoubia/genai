@@ -2,46 +2,43 @@
 
 ## Purpose and intended user
 
-A course prototype for a young adult who is new to international cooking. CuisineIQ takes you from a dish idea to a personalized plan: discover a dish, adapt it to your diet, spice preference, kitchen and shopping constraints, get an organized shopping list, see example store suggestions, and cook it step by step.
+A course prototype for a young adult who is new to international cooking. CuisineIQ takes you from a dish idea to a personalized plan: choose or type any dish, adapt it to your diet, spice preference, kitchen and shopping constraints, get an organized shopping list, and cook it step by step.
 
 ## Run and use
 
-From the project root, run `pnpm --filter @workspace/cooking-assistant run dev`. The page follows the navigation **Discover | Customize | Shopping Plan | Cook**:
+From the project root, run `pnpm --filter @workspace/cooking-assistant run dev` (the API server artifact must also run for live AI). The page is one scrolling journey:
 
-1. **Discover**: search any dish or tap a recipe card. Typing filters the 13 prepared recipes; the original dropdown remains as a secondary option.
-2. **Customize**: servings (1 to 8), dietary preferences (None, Dairy-free, Vegetarian, Vegan, Gluten-free; multi-select), spice (Mild/Medium/Spicy), ingredients already at home, the optional **Tell the chef what you need** box, and **Find Ingredients Near You** (ZIP or City, ST plus Simplest Shopping Trip or Most Authentic Ingredients).
-3. **Create my shopping plan.** A dish is required; an inline message appears if none is chosen. The chef request never blocks submission.
-4. Results: **Your Cooking Plan**, **How Your Recipe Was Adapted**, dietary and allergy notes, **Ingredients & Shopping List** (Already at home / Need to buy / Specialty, with checkboxes), **Ingredient Substitutions**, **Nearby Grocery Stores**, and **Let's Cook!** (stats, equipment, numbered steps with quantities, timing, tips, food-safety notes and check-off). **Edit my choices** returns to the form with all inputs kept.
+1. **Step 1 · Choose Your Dish**: type any dish in "What would you like to cook?" and press Search/Enter, or tap a quick-pick card (13 prepared recipes).
+2. **Step 2 · Customize Your Recipe**: servings (1 to 8), dietary preferences, spice, ingredients already at home, the optional **Tell the chef what you need** note, an optional ZIP code, and a shopping preference.
+3. **Step 3 · Your Plan**: plan header with source badge, **How your recipe was adapted**, dietary and allergy notes, the ingredient list, and **Ingredient Substitutions**.
+4. **Step 4 · Shopping List**: items to buy, specialty items, already at home, and **Nearby Grocery Stores** (your saved location only).
+5. **Step 5 · Cook**: prep, cook and total time, servings, difficulty, equipment, and numbered check-off steps with quantities, tips and food-safety notes.
 
-## How personalization works (Prototype AI Simulation)
+## Where recipes come from
 
-No live AI model is configured. Personalization is conventional programming over one structured recipe model, clearly labeled **Prototype AI Simulation** in the app.
+- **Prepared recipes** (`src/data/recipes/*.ts`): 13 hand-written structured recipes. If the typed dish matches one (name or alias), it is selected immediately with no API call. Labeled "Prepared recipe".
+- **Live AI recipes**: any other dish is sent to the server-side route `POST {BASE_URL}api/recipes/generate` (`artifacts/api-server`, Replit AI integration; no keys in the browser). The server validates the response against a strict schema and consistency checks (ingredient ids, step tokens, fallback targets). `src/data/live-recipe.ts` converts it into the same `Recipe` model (id `ai-<slug>`, no photo; a cuisine tile is shown instead). Generation takes about 30 to 60 seconds and can be cancelled. Generated recipes are cached in memory for the session, so changing servings, diet, spice or notes never regenerates them. Labeled "AI-generated recipe" (model name in the badge info).
+- If the model decides the text is not a real dish, the app shows its message and related prepared recipes; nothing is invented. Errors (400, 429, 502, network) show the message, a retry button and prepared suggestions.
 
-- `src/data/recipes/*.ts`: one structured `Recipe` per dish. It holds ingredients with 2-serving base amounts, specialty and source flags, a `contains` list (dairy, meat, fish, egg, gluten, honey), heat flags, diet swaps, hard-to-find fallbacks, and steps that reference ingredients by id (`{chicken}`).
-- `src/chef-request.ts`: keyword and phrase matching for the chef request and the at-home field. It recognizes "already have", "can't find" and "don't have", mild or spicier, one store or easy to find, authentic, and requests that conflict with a selected diet. Unrecognized text shows: "We couldn't confidently apply that request yet…". Nothing is invented.
-- `src/lib/plan-engine.ts`: builds the plan. Diet swaps, user-chosen substitutions, spice scaling and already-at-home removals all flow into one item list. The shopping list, quantities and step text are all generated from that list, so they stay consistent.
-- `src/data/recipe-source.ts`: a `RecipeSource` interface. Only the prepared source exists. `liveAiRecipeSource` is `null`; a future server-side AI provider can implement the same interface and return validated `Recipe` objects without changing the UI.
+## How adaptation works (rule-based)
 
-### Free-form search outcomes
+Adaptation is conventional code over the structured recipe, for both prepared and AI recipes. The AI does not read your "Tell the chef" note.
 
-- **Supported**: matches a prepared recipe by name or alias.
-- **Unfamiliar**: a recognized dish with no prepared recipe, such as ramen or pho. The app says live AI recipe generation is not configured and suggests related prepared recipes.
-- **Unsupported**: no match. The app shows a helpful message plus related prepared recipes and never invents a recipe.
+- `src/chef-request.ts`: keyword and phrase matching for the chef note and the at-home field ("already have", "can't find", mild or spicier, one store, authentic, and requests that conflict with a selected diet). Unrecognized notes are reported as not applied.
+- `src/lib/plan-engine.ts`: scaling (amounts are per 2 servings), diet checks via each ingredient's `contains` tags, diet swaps, fallbacks, spice scaling (½× Mild, 1.5× Spicy for heat ingredients) and at-home removal flow into one item list. The ingredient list, shopping list and step text are all generated from it, so they never contradict each other.
+- Safety: conventional diet swaps in prepared recipes may apply automatically and are explained. Swaps written by the AI are never applied silently; conflicting ingredients are flagged as "Needs your decision". Substitutes that conflict with a diet are blocked. AI recipes carry the note that their dietary tags are not guaranteed. No allergen-free claims.
 
-### Safety and user control
+## Ingredient Substitutions
 
-- Conventional diet swaps (for example, non-dairy yogurt and oil for yogurt and ghee in biryani, or tamari for soy sauce) are applied when that diet is selected and are listed with their tradeoffs.
-- When an ingredient cannot be reliably adapted (meat, fish sauce or oyster sauce under Vegan, eggs in carbonara, and similar), it is **flagged as "Needs your decision"**. You choose a compatible option, leave it out, or explicitly keep the original. A kept original stays labeled "Does not meet your diet". Optional conflicting items such as the fried egg are left out by default, and the app says so.
-- Hard-to-find substitutes that conflict with a selected diet are **blocked** and explained. Requests such as "add butter" under Dairy-free are reported as not applied.
-- Allergy wording: no allergen-free guarantee. Always check labels and cross-contact statements.
+The single home for substitution advice. Each fallback shows Original ingredient, Suggested alternative, Why this works (flavor/texture tradeoff and authenticity) and Shopping consideration (derived from where the ingredient is usually shelved, plus whether it can be omitted; never a stock claim). Keep original / Use substitute updates the shopping list and steps together.
 
-## Stores
+## Location
 
-There is no live places or inventory service. For the demo location only (South Bend, Indiana / ZIP 46601), three fictional stores are shown and labeled "Illustrative example store data - not real businesses": Demo Neighborhood Supermarket, Demo Asian Grocery, and Demo Indian & International Market. They have no addresses, distances, maps or directions. Availability labels are **Likely category** or **Unknown**. **Confirmed** is never used because no inventory data exists. Any other location gets an honest "live store data is unavailable" message and no stores.
+Optional. Any 5-digit US ZIP (or ZIP+4) is accepted; "City, ST" is also accepted and shown as not verified. Anything else shows "Enter a 5-digit ZIP code, like 46556." on blur and blocks creating the plan. Only six ZIPs are resolved by a tiny built-in table (46601 South Bend, IN; 46556 Notre Dame, IN; 10001 New York, NY; 60601 Chicago, IL; 90210 Beverly Hills, CA; 33101 Miami, FL); other ZIPs show "(city and state not verified)". The location is saved in the form state and shown in Nearby Grocery Stores with a Change location button. There is no store search, inventory, map or store list.
 
-## Prepared data
+## Transparency
 
-All recipe, quantity, sourcing and explanation content is local prepared data, with no backend, AI service or store API calls. The original Thai green curry, chicken biryani and pad kra pao keep their prepared ingredient quantities and explanations. At 2 and 4 servings their exact prepared wording is shown; other serving counts scale proportionally. The 2 to 4 serving scaling is an exact doubling for every recipe. Food photos in `public/images` are AI-generated illustrations.
+One "About this prototype" panel (top right) explains live AI vs prepared recipes, rule-based adaptation, ZIP behavior and label checking. Food photos in `public/images` are AI-generated illustrations for the prepared recipes.
 
 ## Current limits and data caveats
 
@@ -49,4 +46,6 @@ All recipe, quantity, sourcing and explanation content is local prepared data, w
 - Safe-temperature guidance follows common USDA figures: 165°F (74°C) for poultry, 160°F (71°C) for ground beef, and 145°F (63°C) plus rest for whole cuts of beef and pork. Carbonara eggs are not brought to 160°F; the app notes this.
 - Quantities for descriptive amounts (for example, whole spices) show the 2-serving amount with a scale factor at serving counts other than 2 and 4. Spice changes scale by ½× (Mild) or 1.5× (Spicy).
 - Request parsing is keyword-based and can miss phrasing. Unmatched at-home items are listed as not matched.
-- No live AI, store data, inventory, maps, or browser geolocation.
+- No store data, inventory, maps, or browser geolocation. Live AI is used only to write recipes for dishes outside the prepared set.
+- AI-written recipes depend on the model and should be reviewed before cooking; they are not saved after a page reload.
+- Pad kra pao keeps its original prepared ingredient wording, which still mentions "the demo grocer" in the holy basil note.

@@ -78,7 +78,8 @@ export type Recipe = {
   name: string;
   cuisine: string;
   origin: string;
-  image: string;
+  /** Photo for prepared recipes; AI-written recipes have none and show a cuisine tile. */
+  image?: string;
   alt: string;
   aliases: string[];
   summary: string;
@@ -91,6 +92,8 @@ export type Recipe = {
   steps: Step[];
   dietaryNote: string;
   method?: string;
+  /** Present only on recipes written by the live AI route. */
+  source?: { kind: 'live-ai'; model: string };
 };
 
 export const ing = (id: string, name: string, amt: number | null, unit: string, note: string, extra: Partial<IngredientDef> = {}): IngredientDef => ({ id, name, amt, unit, note, ...extra });

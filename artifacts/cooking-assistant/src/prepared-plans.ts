@@ -1,13 +1,18 @@
 /**
- * Shared prepared-data labels. Recipe data now lives in src/data/recipes/*.ts
- * (one structured model per dish); this module keeps the original disclosure
- * strings and re-exports the catalog for older imports.
+ * Shared labels. Recipe data lives in src/data/recipes/*.ts; AI-written
+ * recipes are converted in src/data/live-recipe.ts.
  */
 export { recipes, recipeById } from './data/recipes';
 export type { Diet, Recipe } from './data/types';
 
-export const locationText = 'South Bend, Indiana (ZIP 46601) — demo location';
-export const prototypeDisclosure = 'Prototype: prepared recommendations and illustrative store options; no live AI or inventory checks.';
-export const storeOptionDisclosure = 'Illustrative store option — check availability before visiting.';
-export const aiSimulationText = 'This prototype demonstrates how AI could interpret your cooking and shopping constraints and adapt a plan. Current recommendations use prepared prototype logic rather than a live generative-AI model or live store inventory.';
-export const allergyText = 'Allergy note: CuisineIQ cannot guarantee that any ingredient or packaged product is free of allergens. Always read product labels and "may contain" or cross-contact statements before buying and cooking.';
+export const allergyText = 'Allergy note: CuisineIQ cannot guarantee that any ingredient or packaged product is free of allergens. Always read labels and "may contain" statements.';
+export const aiReviewText = 'This recipe was written by live AI. Review quantities, times and temperatures before cooking.';
+export const aiTagText = 'Ingredient dietary tags on AI-written recipes are not guaranteed; check each ingredient and label.';
+
+export const aboutPoints = [
+  'Live AI writes recipes for dishes outside the prepared set. Each one is checked against a strict structure on the server before it is shown, and is labeled "AI-generated recipe".',
+  'The 13 prepared recipes were written by hand and are labeled "Prepared recipe".',
+  'Adapting a recipe to your diet, spice level, servings, ingredients at home and the "Tell the chef" note is rule-based: CuisineIQ matches keywords and ingredient tags in the structured recipe. The AI does not read your note.',
+  'Your ZIP code is saved for your plan only. There is no live store search, inventory or map in this prototype.',
+  'Always check packaged labels. Nothing here is an allergy guarantee.',
+];

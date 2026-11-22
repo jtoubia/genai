@@ -34,9 +34,11 @@ export const bulgogi: Recipe = {
   ],
   steps: [
     { title: 'Slice the beef', text: 'Freeze {beef} for 20–30 minutes, then slice as thinly as you can across the grain.', minutes: '30 min' },
+    { title: 'Start the rice', text: 'Rinse {rice} 2–3 times until the water is less cloudy, then cook by package directions or in a rice cooker.', minutes: '20 min', tip: 'It cooks while the beef marinates.' },
     { title: 'Make the marinade', text: 'Grate {pear} and mix with {soy}, {sugar}, {sesame-oil}, {garlic}, {ginger} and {gochugaru}.', minutes: '5 min', heat: { Mild: 'Mild: use less chili flakes, or skip them.', Spicy: 'Spicy: more chili flakes, or serve with gochujang.' } },
     { title: 'Marinate', text: 'Toss {beef} and {onion} in the marinade.', minutes: '30 min', tip: 'Up to overnight in the fridge.' },
-    { title: 'Sear in batches', text: 'Heat {oil} in a skillet over high heat. Sear the beef in a single layer until caramelized, then add {scallions} for the last minute.', minutes: '2–3 min per batch', safety: { ing: 'beef', text: 'Thin slices cook through quickly. USDA guidance for whole beef cuts is 145°F (63°C) with a short rest.' } },
+    { title: 'Sear in batches', text: 'Heat {oil} in a skillet over high heat. Sear the beef in a single layer until caramelized, then add {scallions} for the last minute. Look for dark, glossy caramelized edges; stir only once or twice.', minutes: '2–3 min per batch', safety: { ing: 'beef', text: 'Thin slices cook through quickly. USDA guidance for whole beef cuts is 145°F (63°C) with a short rest.' } },
+    { title: 'Taste and adjust', text: 'Taste a piece. If it needs more savor, splash in a little {soy}; if the pan looks dry between batches, add a little more {oil}.', minutes: '1 min' },
     { title: 'Serve', text: 'Sprinkle with {sesame} and serve with {rice}.', minutes: '2 min' },
   ],
   dietaryNote: 'Bulgogi contains no dairy. Soy sauce typically contains wheat. Check labels; this is not an allergy-safety claim.',
@@ -78,6 +80,7 @@ export const bibimbap: Recipe = {
     { title: 'Mix the sauce', text: 'Stir {gochujang} with the remaining {sesame-oil}, the rest of the sugar and 1 tbsp water.', minutes: '2 min', heat: { Mild: 'Mild: less gochujang; thin it with extra water and sesame oil.', Spicy: 'Spicy: more gochujang, or add a pinch of chili flakes.' } },
     { title: 'Fry the eggs', text: 'Fry {egg} sunny-side up in a little oil.', minutes: '3 min', alt: { egg: 'Skip the egg; add extra vegetables or tofu instead.' }, safety: { ing: 'egg', text: 'Cook until whites are set; fully set yolks are safest for higher-risk diners.' } },
     { title: 'Assemble', text: 'Spoon rice into bowls, arrange vegetables and beef on top, add the egg, and serve with the sauce to mix in.', minutes: '3 min' },
+    { title: 'Mix and eat', text: 'At the table, add sauce to taste and stir everything together. A small drizzle of {sesame-oil} on top adds aroma.', minutes: '1 min', tip: 'Mixing is part of the dish: the yolk and sauce coat every grain.' },
   ],
   dietaryNote: 'Bibimbap contains no dairy. Gochujang and soy sauce often contain wheat. Check labels; this is not an allergy-safety claim.',
 };
@@ -111,9 +114,11 @@ export const katsu: Recipe = {
   ],
   steps: [
     { title: 'Prepare the chicken', text: 'Pound {chicken} to an even 1.5 cm thickness and season with salt and pepper.', minutes: '5 min', safety: { ing: 'chicken', text: 'Wash hands and surfaces after handling raw chicken.' } },
+    { title: 'Rice and cabbage', text: 'Start {rice} in a rice cooker or pot. Shred {cabbage} as thinly as you can, soak in cold water for 5 minutes, then drain well.', minutes: '20 min', tip: 'Cold water makes the cabbage extra crisp.' },
     { title: 'Bread', text: 'Dredge in {flour}, dip in beaten {egg}, then press firmly into {panko}.', minutes: '5 min', tip: 'Use one dry hand and one wet hand to avoid clumpy fingers.' },
     { title: 'Heat the oil', text: 'Heat {oil} in a heavy skillet to 340–350°F (170–175°C).', minutes: '5 min', tip: 'Never leave hot oil unattended; keep a lid nearby and never use water on an oil fire.' },
     { title: 'Fry', text: 'Fry the cutlets until deep golden and cooked through, turning once. Drain on a wire rack.', minutes: '3–4 min per side', safety: { ing: 'chicken', text: 'Chicken is safe at 165°F (74°C) in the thickest part.' } },
+    { title: 'Check doneness', text: 'Cut into the thickest {chicken} cutlet: the meat should be white throughout with clear juices. A thermometer is the surest test.', minutes: '1 min', safety: { ing: 'chicken', text: 'Chicken is safe at 165°F (74°C); fry 1 more minute per side if needed.' } },
     { title: 'Serve', text: 'Rest 3 minutes, slice, and serve with shredded {cabbage}, {rice}, {katsu-sauce}, {karashi} and {lemon} wedges.', minutes: '5 min', heat: { Mild: 'Mild: skip or minimize the mustard.', Spicy: 'Spicy: serve extra mustard.' } },
   ],
   dietaryNote: 'Katsu contains no dairy in this version. The coating uses wheat flour, egg and panko. Check labels; this is not an allergy-safety claim.',

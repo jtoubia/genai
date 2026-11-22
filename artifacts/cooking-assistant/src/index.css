@@ -756,3 +756,79 @@ html { scroll-padding-top: 64px; }
 @media (prefers-reduced-motion: reduce) {
   .recipe-card, .progress-bar span, .step { transition:none; }
 }
+
+/* ---------- v4: live AI, labels, location, journey ---------- */
+.topbar { position:relative; z-index:30; }
+.about { position:relative; }
+.about-toggle { display:inline-flex; align-items:center; gap:6px; background:transparent; border:1px solid #d6cfbf; border-radius:99px; padding:7px 12px; font-size:12px; font-weight:700; color:#3b5449; }
+.about-toggle:hover { background:#efebe0; }
+.about-toggle:focus-visible, .icon-btn:focus-visible, .source-badge.live:focus-visible { outline:3px solid #d89b73; outline-offset:2px; }
+.about-panel { position:absolute; right:0; top:calc(100% + 8px); width:min(380px, calc(100vw - 36px)); background:#fbf9f3; border:1px solid #dfd8c9; border-radius:14px; box-shadow:0 18px 40px rgba(55,58,40,.16); padding:14px 16px; animation:fade-up .18s ease both; }
+.about-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:13px; color:#24483d; }
+.about-panel ul { margin:0; padding-left:17px; font-size:12px; line-height:1.55; color:#55665d; }
+.about-panel li { margin-bottom:6px; }
+.icon-btn { border:0; background:transparent; color:#5f7066; padding:4px; border-radius:6px; display:grid; place-items:center; }
+@keyframes fade-up { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+
+.intro { grid-template-columns:1fr; }
+.discover-sub { font-size:13px; color:#6b786f; margin:-6px 0 14px; }
+.search-button:disabled, .search-wrap input:disabled { opacity:.6; cursor:progress; }
+.grid-label { margin:20px 2px -4px; font-size:10.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#7b847a; }
+.search-message.is-error { background:#f8e9e2; border-color:#e8c2b2; color:#7a3f30; }
+.related-line { font-weight:600; }
+.related-chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; }
+.choice-chip.as-btn { cursor:pointer; }
+.choice-chip.as-btn:hover { border-color:#47745f; }
+.gen-loading { position:relative; margin-top:14px; padding:16px 18px; border-radius:14px; background:#edf3ea; border:1px solid #cfdccb; color:#2f463c; font-size:13px; line-height:1.5; }
+.gen-loading-top { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; }
+.gen-loading p { margin:4px 0 0; color:#5f7066; font-size:12px; }
+.gen-skel { display:grid; gap:8px; margin-top:14px; }
+.gen-skel span { display:block; height:9px; border-radius:99px; background:linear-gradient(90deg,#dbe6d7 0%,#f3f6ee 50%,#dbe6d7 100%); background-size:200% 100%; animation:shimmer 1.4s linear infinite; }
+.gen-timer { position:absolute; right:18px; bottom:12px; font:500 11px var(--font-mono); color:#7b8a7f; }
+@keyframes shimmer { from { background-position:200% 0; } to { background-position:-200% 0; } }
+
+.dish-tile { display:flex; flex-direction:column; justify-content:flex-end; width:100%; height:100%; padding:10px; background:radial-gradient(circle at 78% 22%, #e7b68f 0 18%, transparent 19%), linear-gradient(150deg,#2c6250 0%,#3f7a63 55%,#b76545 140%); color:#fbf6ea; overflow:hidden; }
+.dish-tile-mark { font:600 34px/1 var(--font-serif); letter-spacing:-.04em; opacity:.92; }
+.dish-tile-cuisine { font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; opacity:.85; margin-top:4px; }
+.chosen-thumb.dish-tile, .chosen-dish .dish-tile { width:48px; height:48px; flex:none; border-radius:9px; padding:5px; }
+.chosen-dish .dish-tile-mark { font-size:17px; }
+.chosen-dish .dish-tile-cuisine { display:none; }
+.plan-hero .dish-tile { width:96px; height:96px; flex:none; border-radius:14px; }
+.chosen-dish > span { align-items:flex-start; gap:2px; }
+
+.source-wrap { position:relative; display:inline-flex; }
+.source-badge { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700; letter-spacing:.04em; border-radius:99px; padding:3px 8px; white-space:nowrap; line-height:1.4; }
+.source-badge.prepared { background:#e4ebe1; color:#386553; }
+.source-badge.live { background:#f6e7da; color:#8b4f35; border:1px solid #ecd0bb; cursor:pointer; }
+.source-pop { position:absolute; left:0; top:calc(100% + 6px); z-index:5; width:min(280px, 70vw); background:#fbf9f3; border:1px solid #dfd8c9; border-radius:10px; padding:9px 11px; font-size:11.5px; line-height:1.5; color:#55665d; box-shadow:0 10px 24px rgba(55,58,40,.12); white-space:normal; letter-spacing:0; font-weight:500; }
+.badge-row { margin:-4px 0 10px; }
+.rule-badge { font-size:9.5px; text-transform:uppercase; letter-spacing:.1em; font-weight:700; color:#6d7c6c; background:#efebe0; border-radius:99px; padding:4px 8px; }
+.ai-notes { margin:10px 0 0; padding:9px 12px 9px 26px; border-radius:9px; background:#faf0da; border:1px solid #e5c99f; color:#6a4f31; font-size:11.5px; line-height:1.5; }
+
+.journey { scroll-margin-top:64px; }
+.journey + .journey { margin-top:22px; padding-top:18px; border-top:1px dashed #d9d1c0; }
+.journey-label { margin:0 2px 10px; font-size:10.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:#b76545; }
+.notes-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.notes-row .notice { margin-bottom:14px; }
+.ingredient-list.overview { padding:0; }
+.ingredient.is-omitted .ingredient-name { color:#9aa197; text-decoration:line-through; }
+.ingredient.compact { padding:9px 0; align-items:center; }
+.ingredient.compact .ingredient-head { margin:0; }
+.omit-line { display:block; margin-top:3px; color:#7b847a; }
+.shop-location { font-size:15px; color:#2f463c; margin:0 0 8px; }
+.shop-location strong { font-family:var(--font-mono); font-weight:600; }
+.shop-location span { color:#6b786f; font-size:13px; }
+.link-button.inline { padding:0; font-size:inherit; }
+.cook-title-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.cook-title-row .cook-dish { margin:0; }
+.nav-step { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:#9b6148; }
+.step-nav button:disabled .nav-step { color:inherit; }
+
+@media (max-width: 760px) {
+  .notes-row { grid-template-columns:1fr; }
+  .nav-step { display:none; }
+  .gen-loading-top { flex-direction:column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gen-skel span, .about-panel { animation:none; }
+}
