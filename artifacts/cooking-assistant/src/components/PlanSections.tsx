@@ -1,5 +1,4 @@
 import { AlertTriangle, Check, ChefHat, Clock, MapPin, ShieldCheck, Utensils } from 'lucide-react';
-import { UNRECOGNIZED_MESSAGE } from '../chef-request';
 import type { SourceKind } from '../data/types';
 import type { Decisions, Plan, PlanItem, SwapChoice } from '../lib/plan-engine';
 import { describeLocation, type LocationResult } from '../lib/location';
@@ -15,31 +14,43 @@ const SHOP_LABEL: Record<SourceKind, string> = {
   international: 'international grocery',
 };
 
-/** Step 3: what goes in the dish, with the short "why" for each ingredient. */
-export function IngredientsOverview({ plan }: { plan: Plan }) {
+/** Step 3: the full ingredient list. Checking a row means "I already have this at home". */
+export function IngredientsOverview({ plan, home, onToggle }: { plan: Plan; home: Set<string>; onToggle: Toggle }) {
+  const countable = plan.items.filter((i) => i.status !== 'omitted');
+  const haveCount = countable.filter((i) => i.status === 'home').length;
   return (
     <section className="result-block" aria-labelledby="ingredients-heading" data-testid="section-ingredients">
       <div className="block-head">
-        <h3 id="ingredients-heading">Ingredients</h3>
-        <span className="progress-pill">For {plan.servings} {plan.servings === 1 ? 'serving' : 'servings'}</span>
+        <h3 id="ingredients-heading">Your Ingredients</h3>
+        <span className="progress-pill" data-testid="text-home-progress">{haveCount} of {countable.length} ingredients already at home</span>
       </div>
+      <p className="control-note" data-testid="text-ingredients-instructions">Check the ingredients you already have at home. We'll add everything else to your shopping list.</p>
+      <p className="field-hint" style={{ marginTop: 0 }}>For {plan.servings} {plan.servings === 1 ? 'serving' : 'servings'}. A checkmark means you already have it, not that you have bought it.</p>
       <ul className="ingredient-list overview">
-        {plan.items.map((item) => (
-          <li className={`ingredient${item.status === 'conflict' ? ' is-conflict' : ''}${item.status === 'omitted' ? ' is-omitted' : ''}`} key={item.id} data-testid={`row-ingredient-${item.id}`}>
-            <div className="ingredient-main">
-              <div className="ingredient-head">
-                <span className="ingredient-name">
-                  {item.name}
-                  {item.status === 'conflict' ? <span className="ingredient-tag warn">Needs your decision</span> : item.status === 'omitted' ? <span className="ingredient-tag">Left out</span> : item.label && <span className={`ingredient-tag${item.change === 'kept-conflict' ? ' warn' : ''}`}>{item.label}</span>}
-                </span>
-                <span className="ingredient-qty">{item.status === 'omitted' ? '—' : item.qty}</span>
+        {plan.items.map((item) => {
+          const have = item.status === 'home' && home.has(item.key);
+          const disabled = item.status === 'omitted' || item.status === 'conflict';
+          return (
+            <li className={`ingredient${have ? ' is-checked' : ''}${item.status === 'conflict' ? ' is-conflict' : ''}${item.status === 'omitted' ? ' is-omitted' : ''}`} key={item.id} data-testid={`row-ingredient-${item.id}`}>
+              <label className="shop-check">
+                <input type="checkbox" checked={have} disabled={disabled} onChange={() => onToggle(item.key)} data-testid={`checkbox-have-${item.id}`} />
+                <span className="sr-only">I already have {item.name} at home</span>
+              </label>
+              <div className="ingredient-main">
+                <div className="ingredient-head">
+                  <span className="ingredient-name">
+                    {item.name}
+                    {item.status === 'conflict' ? <span className="ingredient-tag warn">Needs your decision</span> : item.status === 'omitted' ? <span className="ingredient-tag">Left out</span> : item.label && <span className={`ingredient-tag${item.change === 'kept-conflict' ? ' warn' : ''}`}>{item.label}</span>}
+                  </span>
+                  <span className="ingredient-qty" data-testid={`text-ingredient-qty-${item.id}`}>{item.status === 'omitted' ? '—' : item.qty}</span>
+                </div>
+                <p className="ingredient-detail" data-testid={`text-ingredient-explanation-${item.id}`}>{item.note}</p>
+                {item.change !== 'none' && item.origName !== item.name && <p className="ingredient-was">Instead of: {item.origName}</p>}
+                {item.violates.length > 0 && <p className="ingredient-was warn-text">Does not meet: {item.violates.join(', ')}</p>}
               </div>
-              <p className="ingredient-detail" data-testid={`text-ingredient-explanation-${item.id}`}>{item.note}</p>
-              {item.change !== 'none' && item.origName !== item.name && <p className="ingredient-was">Instead of: {item.origName}</p>}
-              {item.violates.length > 0 && <p className="ingredient-was warn-text">Does not meet: {item.violates.join(', ')}</p>}
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
@@ -73,18 +84,13 @@ export function IngredientList({ items, group, checked, onToggle }: { items: Pla
   );
 }
 
-export function AdaptedSection({ plan, request }: { plan: Plan; request: string }) {
-  const { interp } = plan;
+export function AdaptedSection({ plan }: { plan: Plan }) {
   return (
     <section className="result-block anchor-section" aria-labelledby="adapted-heading" data-testid="section-adapted-plan">
       <div className="block-head">
         <h3 id="adapted-heading">How your recipe was adapted</h3>
-        <span className="rule-badge" title="Applied by matching keywords and ingredient tags in the structured recipe">Rule-based</span>
+        <span className="rule-badge" title="Applied by rules over ingredient tags in the structured recipe">Rule-based</span>
       </div>
-      {interp.hasRequest && <p className="adapted-quote" data-testid="text-chef-request">“{request.trim()}”</p>}
-      {interp.hasRequest && !interp.understood && (
-        <p className="notice notice-muted" role="status" data-testid="notice-request-unrecognized">{UNRECOGNIZED_MESSAGE}</p>
-      )}
       {plan.cards.length ? (
         <ul className="adapt-list">
           {plan.cards.map((card, i) => (
@@ -108,7 +114,6 @@ export function AdaptedSection({ plan, request }: { plan: Plan; request: string 
 }
 
 export function ShoppingSection({ plan, checked, onToggle }: { plan: Plan; checked: Set<string>; onToggle: Toggle }) {
-  const home = plan.items.filter((i) => i.status === 'home');
   const buy = plan.items.filter((i) => (i.status === 'buy' || i.status === 'conflict') && !i.specialty);
   const specialty = plan.items.filter((i) => (i.status === 'buy' || i.status === 'conflict') && i.specialty);
   const leftOut = plan.items.filter((i) => i.status === 'omitted');
@@ -119,11 +124,15 @@ export function ShoppingSection({ plan, checked, onToggle }: { plan: Plan; check
   return (
     <section className="result-block" aria-labelledby="shopping-heading" data-testid="section-shopping-list">
       <div className="block-head">
-        <h3 id="shopping-heading">Shopping list</h3>
-        <span className="progress-pill" data-testid="text-shopping-progress">{done} of {toGet.length} in basket</span>
+        <h3 id="shopping-heading">Your Shopping List</h3>
+        <span className="progress-pill" data-testid="text-shopping-progress">{toGet.length} {toGet.length === 1 ? 'item' : 'items'} to buy · {done} in basket</span>
       </div>
+      <p className="control-note">Everything in "Your Ingredients" that you have not checked off. Changes as you check items.</p>
+      {toGet.length === 0 && <p className="notice" role="status" data-testid="text-have-everything"><strong>You already have everything you need!</strong></p>}
       <div className="progress-bar" aria-hidden="true"><span style={{ transform: `scaleX(${toGet.length ? done / toGet.length : 0})` }} /></div>
 
+      {toGet.length > 0 && (
+      <>
       <section className="section-card" aria-labelledby="common-heading" data-testid="section-common-ingredients">
         <div className="section-title">
           <h4 id="common-heading">Items to buy</h4>
@@ -144,18 +153,7 @@ export function ShoppingSection({ plan, checked, onToggle }: { plan: Plan; check
         )}
       </section>
 
-      {home.length > 0 && (
-        <section className="section-card" aria-labelledby="home-heading" data-testid="section-at-home">
-          <div className="section-title">
-            <h4 id="home-heading">Already at home</h4>
-            <span className="store-name home-pill">Not on your list</span>
-          </div>
-          <ul className="home-list">
-            {home.map((item) => (
-              <li key={item.id} data-testid={`text-at-home-${item.id}`}><span>{item.name}</span><span className="ingredient-qty">{item.qty}</span></li>
-            ))}
-          </ul>
-        </section>
+      </>
       )}
 
       {leftOut.length > 0 && (

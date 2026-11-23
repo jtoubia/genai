@@ -9,7 +9,7 @@ A course prototype for a young adult who is new to international cooking. Cuisin
 From the project root, run `pnpm --filter @workspace/cooking-assistant run dev` (the API server artifact must also run for live AI). The page is one scrolling journey:
 
 1. **Step 1 · Choose Your Dish**: type any dish in "What would you like to cook?" and press Search/Enter, or tap a quick-pick card (13 prepared recipes).
-2. **Step 2 · Customize Your Recipe**: servings (1 to 8), dietary preferences, spice, ingredients already at home, the optional **Tell the chef what you need** note, an optional ZIP code, and a shopping preference.
+2. **Step 2 · Customize Your Recipe**: servings (1 to 8), dietary preferences, spice, an optional ZIP code, and a shopping preference. Ingredients you already have are checked off later, in **Your Ingredients**; the shopping list is derived from the unchecked ones.
 3. **Step 3 · Your Plan**: plan header with source badge, **How your recipe was adapted**, dietary and allergy notes, the ingredient list, and **Ingredient Substitutions**.
 4. **Step 4 · Shopping List**: items to buy, specialty items, already at home, and **Nearby Grocery Stores** (your saved location only).
 5. **Step 5 · Cook**: prep, cook and total time, servings, difficulty, equipment, and numbered check-off steps with quantities, tips and food-safety notes.
@@ -22,9 +22,9 @@ From the project root, run `pnpm --filter @workspace/cooking-assistant run dev` 
 
 ## How adaptation works (rule-based)
 
-Adaptation is conventional code over the structured recipe, for both prepared and AI recipes. The AI does not read your "Tell the chef" note.
+Adaptation is conventional code over the structured recipe, for both prepared and AI recipes.
 
-- `src/chef-request.ts`: keyword and phrase matching for the chef note and the at-home field ("already have", "can't find", mild or spicier, one store, authentic, and requests that conflict with a selected diet). Unrecognized notes are reported as not applied.
+- `src/chef-request.ts`: diet-tag checks shared by the plan engine.
 - `src/lib/plan-engine.ts`: scaling (amounts are per 2 servings), diet checks via each ingredient's `contains` tags, diet swaps, fallbacks, spice scaling (½× Mild, 1.5× Spicy for heat ingredients) and at-home removal flow into one item list. The ingredient list, shopping list and step text are all generated from it, so they never contradict each other.
 - Safety: conventional diet swaps in prepared recipes may apply automatically and are explained. Swaps written by the AI are never applied silently; conflicting ingredients are flagged as "Needs your decision". Substitutes that conflict with a diet are blocked. AI recipes carry the note that their dietary tags are not guaranteed. No allergen-free claims.
 
@@ -45,7 +45,6 @@ One "About this prototype" panel (top right) explains live AI vs prepared recipe
 - Thirteen prepared recipes. Methods are simplified, conventional home-cooking versions, not definitive or regional-authentic references. For example, shawarma is oven-roasted with a yogurt-garlic sauce, al pastor is cooked in a skillet rather than on a trompo, and the dairy-free swaps change the character of the dish.
 - Safe-temperature guidance follows common USDA figures: 165°F (74°C) for poultry, 160°F (71°C) for ground beef, and 145°F (63°C) plus rest for whole cuts of beef and pork. Carbonara eggs are not brought to 160°F; the app notes this.
 - Quantities for descriptive amounts (for example, whole spices) show the 2-serving amount with a scale factor at serving counts other than 2 and 4. Spice changes scale by ½× (Mild) or 1.5× (Spicy).
-- Request parsing is keyword-based and can miss phrasing. Unmatched at-home items are listed as not matched.
 - No store data, inventory, maps, or browser geolocation. Live AI is used only to write recipes for dishes outside the prepared set.
 - AI-written recipes depend on the model and should be reviewed before cooking; they are not saved after a page reload.
 - Pad kra pao keeps its original prepared ingredient wording, which still mentions "the demo grocer" in the holy basil note.

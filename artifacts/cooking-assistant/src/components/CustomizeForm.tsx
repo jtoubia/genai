@@ -6,7 +6,7 @@ import type { Strategy } from '../lib/plan-engine';
 import { describeLocation, parseLocation } from '../lib/location';
 import { DishThumb, SourceBadge } from './Shared';
 
-export type Choices = { dish: string; servings: number; diets: Diet[]; spice: Spice; atHome: string; request: string; location: string; strategy: Strategy };
+export type Choices = { dish: string; servings: number; diets: Diet[]; spice: Spice; location: string; strategy: Strategy };
 
 type Props = {
   choices: Choices;
@@ -132,26 +132,6 @@ export function CustomizeForm({ choices, setChoices, recipe, liveRecipes, error,
           </div>
 
           <div className="form-col">
-            <div className="field">
-              <label className="field-label" htmlFor="at-home">Ingredients already at home <span className="optional">Optional</span></label>
-              <input id="at-home" className="text-input" value={choices.atHome} onChange={(e) => set({ atHome: e.target.value })} placeholder="Chicken, rice, garlic, onions" data-testid="input-at-home" />
-              <p className="field-hint">Separate with commas. Matching items move to “Already at home”.</p>
-            </div>
-
-            <div className="field">
-              <label className="field-label" htmlFor="chef-request">Tell the chef what you need <span className="optional">Optional</span></label>
-              <textarea
-                id="chef-request"
-                className="chef-textarea"
-                rows={5}
-                value={choices.request}
-                placeholder="I already have chicken and rice, want something mild, and can't find specialty ingredients."
-                onChange={(e) => set({ request: e.target.value })}
-                data-testid="input-chef-request"
-              />
-              <p className="field-hint">Matched by keywords: things you have, can't find, mild or spicier, one store, authentic.</p>
-            </div>
-
             <fieldset className="field plain-fieldset near-you">
               <legend className="field-label">Shopping location <span className="optional">Optional</span></legend>
               <label className="sr-only" htmlFor="location">ZIP code</label>

@@ -12,7 +12,7 @@ import { buildPlan, initialDecisions, type Decisions, type PlanInput, type SwapC
 import { parseLocation } from './lib/location';
 import { allergyText } from './prepared-plans';
 
-const defaultChoices: Choices = { dish: '', servings: 2, diets: [], spice: 'Medium', atHome: '', request: '', location: '', strategy: 'authentic' };
+const defaultChoices: Choices = { dish: '', servings: 2, diets: [], spice: 'Medium', location: '', strategy: 'authentic' };
 
 const scrollTo = (id: string) => window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
 
@@ -34,6 +34,8 @@ function Home() {
   const [error, setError] = useState('');
   const [locError, setLocError] = useState('');
   const [editing, setEditing] = useState(true);
+  // Ingredients the user already has, keyed by PlanItem.key (ingredient id + variant in use).
+  const [home, setHome] = useState<Set<string>>(new Set());
   const [shopChecked, setShopChecked] = useState<Set<string>>(new Set());
   const [stepsDone, setStepsDone] = useState<Set<number>>(new Set());
   // Session cache of AI-written recipes: changing preferences never regenerates them.
@@ -50,9 +52,9 @@ function Home() {
   const input = useMemo<PlanInput | null>(() => {
     if (!submitted) return null;
     const recipe = recipeById(submitted.dish) ?? live[submitted.dish];
-    return recipe ? { recipe, servings: submitted.servings, diets: submitted.diets, spice: submitted.spice, request: submitted.request, atHome: submitted.atHome, strategy: submitted.strategy } : null;
+    return recipe ? { recipe, servings: submitted.servings, diets: submitted.diets, spice: submitted.spice, strategy: submitted.strategy } : null;
   }, [submitted, live]);
-  const plan = useMemo(() => (input ? buildPlan(input, decisions) : null), [input, decisions]);
+  const plan = useMemo(() => (input ? buildPlan(input, decisions, home) : null), [input, decisions, home]);
   const selectedRecipe = getRecipe(choices.dish);
 
   // Location shown in Step 4 follows the form as soon as it is well-formed.
@@ -126,8 +128,8 @@ function Home() {
     setLocError('');
     const sameDish = submitted?.dish === choices.dish;
     setSubmitted({ ...choices });
-    setDecisions(initialDecisions({ recipe, servings: choices.servings, diets: choices.diets, spice: choices.spice, request: choices.request, atHome: choices.atHome, strategy: choices.strategy }));
-    if (!sameDish) { setShopChecked(new Set()); setStepsDone(new Set()); }
+    setDecisions(initialDecisions({ recipe, servings: choices.servings, diets: choices.diets, spice: choices.spice, strategy: choices.strategy }));
+    if (!sameDish) { setHome(new Set()); setShopChecked(new Set()); setStepsDone(new Set()); }
     setEditing(false);
     scrollTo('plan');
   }
@@ -231,12 +233,12 @@ function Home() {
                     <p className="plan-intro" data-testid="text-plan-summary">{plan.recipe.summary}</p>
                   </div>
 
-                  <AdaptedSection plan={plan} request={submitted.request} />
+                  <AdaptedSection plan={plan} />
                   <div className="notes-row">
                     <p className="notice" data-testid="notice-dietary"><strong>Dietary note:</strong> {plan.recipe.dietaryNote}</p>
                     <p className="notice notice-allergy" data-testid="notice-allergy">{allergyText}</p>
                   </div>
-                  <IngredientsOverview plan={plan} />
+                  <IngredientsOverview plan={plan} home={home} onToggle={(key) => setHome(toggle(home, key))} />
                   <SubstitutionSection
                     plan={plan}
                     decisions={decisions}

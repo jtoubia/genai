@@ -1,14 +1,16 @@
-import { dietsViolated, interpret, type AdaptationCard, type Interpretation } from '../chef-request';
+import { dietsViolated, type AdaptationCard } from '../chef-request';
 import { SPICE_FACTOR, type Diet, type FallbackDef, type IngLabel, type IngredientSpec, type Recipe, type SourceKind, type Spice, type Tag } from '../data/types';
 
 export type Strategy = 'simplest' | 'authentic';
 export type SwapChoice = 'original' | 'substitute';
-export type PlanInput = { recipe: Recipe; servings: number; diets: Diet[]; spice: Spice; request: string; atHome: string; strategy: Strategy };
+export type PlanInput = { recipe: Recipe; servings: number; diets: Diet[]; spice: Spice; strategy: Strategy };
 export type Decisions = { swaps: Record<string, SwapChoice>; diet: Record<string, string> };
 
 export type ItemStatus = 'buy' | 'home' | 'omitted' | 'conflict';
 export type PlanItem = {
   id: string;
+  /** Identity of what is currently on the list: ingredient id plus the variant in use, so a substitute never inherits the original's at-home state. */
+  key: string;
   name: string;
   qty: string;
   note: string;
@@ -32,7 +34,6 @@ export type Plan = {
   servings: number;
   diets: Diet[];
   effectiveSpice: Spice;
-  interp: Interpretation;
   items: PlanItem[];
   conflicts: ConflictView[];
   fallbacks: FallbackView[];
@@ -77,40 +78,32 @@ function fallbackBlocked(f: FallbackDef, diets: Diet[]) {
   return f.ing ? dietsViolated(f.ing.contains, diets) : [];
 }
 
-export function recommendedSwaps(input: PlanInput, interp: Interpretation): Record<string, SwapChoice> {
+export function recommendedSwaps(input: PlanInput): Record<string, SwapChoice> {
   const out: Record<string, SwapChoice> = {};
   for (const f of input.recipe.fallbacks) {
     const target = input.recipe.ingredients.find((i) => i.id === f.target);
     const applicable = !!target && dietsViolated(target.contains, input.diets).length === 0 && fallbackBlocked(f, input.diets).length === 0;
-    const wantSub = interp.cantFindIds.includes(f.target) || interp.easyShop || input.strategy === 'simplest';
+    const wantSub = input.strategy === 'simplest';
     out[f.target] = applicable && wantSub ? 'substitute' : 'original';
   }
   return out;
 }
 
 export function initialDecisions(input: PlanInput): Decisions {
-  const interp = interpret(input.recipe, input.request, input.atHome, input.diets);
   const diet: Record<string, string> = {};
   input.recipe.ingredients.forEach((i) => {
     if (i.optional && dietsViolated(i.contains, input.diets).length) diet[i.id] = 'omit';
   });
-  return { swaps: recommendedSwaps(input, interp), diet };
+  return { swaps: recommendedSwaps(input), diet };
 }
 
 /* ---------- plan ---------- */
 const lcFirst = (s: string) => (/^[A-Z][a-z]/.test(s) && !/^(Thai|Asian|Korean|Japanese|Filipino|Kashmiri|Pecorino|English|Dijon|Bosc|Fresno|Garam|Kasuri|Tamari|Gochujang|Gochugaru|Karashi|Achiote|Makrut)\b/.test(s) ? s[0].toLowerCase() + s.slice(1) : s);
-const list = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0] ?? '');
 
-export function buildPlan(input: PlanInput, decisions: Decisions): Plan {
+export function buildPlan(input: PlanInput, decisions: Decisions, home: ReadonlySet<string> = new Set()): Plan {
   const { recipe, servings, diets } = input;
-  const interp = interpret(recipe, input.request, input.atHome, diets);
-  const cards: AdaptationCard[] = [...interp.notes];
-
-  let effectiveSpice = input.spice;
-  if (interp.spiceReq && interp.spiceReq !== input.spice) {
-    if (input.spice === 'Medium') effectiveSpice = interp.spiceReq;
-    else cards.push({ kind: 'Not applied', text: `Your request asked for ${interp.spiceReq.toLowerCase()} heat, but Spice preference is set to ${input.spice}. ${input.spice} was used; change Spice preference to switch.` });
-  }
+  const cards: AdaptationCard[] = [];
+  const effectiveSpice = input.spice;
   const factor = SPICE_FACTOR[effectiveSpice];
 
   // Which fallbacks are applied, and which items they make unnecessary.
@@ -123,7 +116,7 @@ export function buildPlan(input: PlanInput, decisions: Decisions): Plan {
     const targetViolates = dietsViolated(target.contains, diets);
     const blockedBy = fallbackBlocked(f, diets);
     const available = targetViolates.length === 0;
-    const rec = recommendedSwaps(input, interp)[f.target] ?? 'original';
+    const rec = recommendedSwaps(input)[f.target] ?? 'original';
     let current = decisions.swaps[f.target] ?? rec;
     if (blockedBy.length || !available) current = 'original';
     fallbackViews.push({ ...f, originalName: target.name, current, recommended: rec, blockedBy, available, reason: !available ? `The original conflicts with ${targetViolates.join(' + ')}; resolve it under "Needs your decision".` : undefined });
@@ -133,7 +126,6 @@ export function buildPlan(input: PlanInput, decisions: Decisions): Plan {
     }
   }
 
-  const have = new Set(interp.haveIds);
   const conflicts: ConflictView[] = [];
   const dietCards: string[] = [];
   const subCards: string[] = [];
@@ -204,10 +196,12 @@ export function buildPlan(input: PlanInput, decisions: Decisions): Plan {
     const qty = quantity(spec, servings, heat ? factor : 1);
     if (spiceChanged) spiceChanges.push(spec.amt != null ? `${spec.name}: ${quantity(spec, servings)} to ${qty}` : `${spec.name}: ${qty.split(', ').pop()}`);
     if (spiceChanged && !label) label = 'Spice adjusted';
-    if (status === 'buy' && have.has(def.id)) status = 'home';
+    const key = `${def.id}::${spec.name}`;
+    if (status === 'buy' && home.has(key)) status = 'home';
 
     return {
       id: def.id,
+      key,
       name: spec.name,
       qty,
       note: spec.note,
@@ -225,21 +219,13 @@ export function buildPlan(input: PlanInput, decisions: Decisions): Plan {
   });
 
   // Request-driven cards, in the order a cook reads them.
-  const homeItems = items.filter((i) => i.status === 'home');
-  if (homeItems.length) cards.unshift({ kind: 'Already have', text: `Removed ${list(homeItems.map((i) => lcFirst(i.origName)))} from your shopping list because you already have ${homeItems.length > 1 ? 'them' : 'it'}.` });
-  if (interp.unmatchedHome.length) cards.push({ kind: 'Note', text: `Not matched to this recipe, so nothing changed for: ${interp.unmatchedHome.map((u) => `"${u}"`).join(', ')}.` });
-  if (spiceChanges.length) cards.push({ kind: 'Flavor', text: `${effectiveSpice === 'Mild' ? 'Reduced' : 'Increased'} the heat to match a ${effectiveSpice.toLowerCase()} preference${effectiveSpice !== input.spice ? ' (from your request)' : ''}: ${spiceChanges.join('; ')}. Aromatics and herbs are unchanged so the dish keeps its character.` });
+  if (spiceChanges.length) cards.push({ kind: 'Flavor', text: `${effectiveSpice === 'Mild' ? 'Reduced' : 'Increased'} the heat to match a ${effectiveSpice.toLowerCase()} preference: ${spiceChanges.join('; ')}. Aromatics and herbs are unchanged so the dish keeps its character.` });
   dietCards.forEach((text) => cards.push({ kind: 'Dietary', text }));
   if (subCards.length) {
-    const why = interp.cantFindIds.length
-      ? `You said you can't find ${list(interp.cantFindIds.map((id) => lcFirst(recipe.ingredients.find((i) => i.id === id)?.name ?? id)))}, so supermarket-friendly alternatives are recommended.`
-      : interp.easyShop || input.strategy === 'simplest'
-        ? 'You asked for a simpler shopping trip, so easier-to-find alternatives are recommended.'
-        : '';
+    const why = input.strategy === 'simplest' ? 'You chose the simplest shopping trip, so easier-to-find alternatives are recommended.' : '';
     cards.push({ kind: 'Shopping', text: `${why} These are somewhat less authentic but let you complete the meal without extra specialty stops; you can keep any original below.`.trim() });
     subCards.forEach((text) => cards.push({ kind: 'Substitution', text }));
   }
-  if (interp.authentic && !subCards.length) cards.push({ kind: 'Shopping', text: 'You asked for an authentic result, so the traditional ingredients stay recommended.' });
 
   // Steps reflect every change above.
   const byId = new Map(items.map((i) => [i.id, i]));
@@ -271,7 +257,7 @@ export function buildPlan(input: PlanInput, decisions: Decisions): Plan {
   });
 
   return {
-    recipe, servings, diets, effectiveSpice, interp, items, conflicts, fallbacks: fallbackViews, steps, cards,
+    recipe, servings, diets, effectiveSpice, items, conflicts, fallbacks: fallbackViews, steps, cards,
     unresolved: items.filter((i) => i.status === 'conflict').length,
   };
 }
