@@ -68,13 +68,3 @@ Also upload the **video file itself** to Canvas with the public GitHub repositor
 | [`evaluation.md`](evaluation.md) | Seven test cases, results, consistency check, and evidence interpretation. |
 | [`ai-use-disclosure.md`](ai-use-disclosure.md) | AI tools, prompts, human judgment, implementation status, and verification. |
 | [`demo-script.md`](demo-script.md) | Optional narration guide; not a graded submission file. |
-
-## Before submission
-
-- [ ] Confirm the public GitHub repository contains the **current** app code and all linked files.
-- [ ] Verify the Replit prototype opens in a private/incognito window.
-- [ ] Verify and update the exact live AI implementation details in the disclosure.
-- [ ] Replace the Demo Video placeholder with its Google Drive viewing link.
-- [ ] Confirm both instructors have viewing access to the video.
-- [ ] Upload the same MP4/MOV file directly to Canvas, along with the public GitHub repository link.
-- [ ] Do not commit API keys, tokens, or personal information.
