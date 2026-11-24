@@ -47,9 +47,10 @@ The same Ethiopian Doro Wat AI request was repeated three times with identical r
 
 CuisineIQ is a prototype. ZIP entry does not verify grocery-store stock, and suggestions should not be treated as guarantees of dietary or allergy safety. Recipes, labels, and cooking safety still require user review.
 
-## Demo video
+## Demo video[
 
-**[ADD GOOGLE DRIVE DEMO VIEWING LINK HERE AFTER RECORDING]**
+**[ADD GOOGLE DRIVE DEMO VIEWING LINK HERE AFTER RECORDING]**]
+(https://drive.google.com/file/d/13DOnB3NzR8D2RG3C-6wUXcF3EC4ze0KR/view?usp=sharing)
 
 ## Repository contents
 
