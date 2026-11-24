@@ -51,13 +51,6 @@ CuisineIQ is a prototype. ZIP entry does not verify grocery-store stock, and sug
 
 **[ADD GOOGLE DRIVE DEMO VIEWING LINK HERE AFTER RECORDING]**
 
-The required demo is a **2–3 minute screen recording with narration**. Upload the video to Google Drive and grant access to:
-
-- Emelia Hughes — `ehughes8@nd.edu`
-- Samuel Huang — `ghuang3@nd.edu`
-
-Also upload the **video file itself** to Canvas with the public GitHub repository link. The optional [demo speaking script](demo-script.md) is provided for recording preparation; the assignment does **not** require uploading a script.
-
 ## Repository contents
 
 | File | Purpose |
